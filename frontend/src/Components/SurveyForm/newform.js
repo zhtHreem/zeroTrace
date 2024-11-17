@@ -8,7 +8,31 @@ export default function NewForm() {
     const [formDescription, setFormDescription] = useState("Description");
     const [questions, setQuestions] = useState([]);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
+    const userId = '648cb2c4b159e4184d54aeda';
 
+
+
+
+    const handleSubmit = async () => {
+    try {
+        const response = await fetch('http://localhost:5000/api/forms', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: formTitle,
+                description: formDescription,
+                questions: questions,
+                user:userId                       //change it
+            })
+        });
+        const data = await response.json();
+        console.log('Form saved:', data);
+    } catch (error) {
+        console.error('Error saving form:', error);
+    }
+};
     // Handle drag and drop reordering
     const handleDragEnd = (result) => {
         if (!result.destination) return;
@@ -285,7 +309,7 @@ export default function NewForm() {
 
                 {/* Submit Button */}
                <Button variant="contained" size="large" sx={{ backgroundColor: "#3A6351", mt: 4, mb: 4, '&:hover': { backgroundColor: "#2C4F3B" } }}
-                    onClick={() => console.log("Form submitted:", { formTitle, formDescription, questions })}>
+                    onClick={handleSubmit}>
                     Submit
                 </Button>
             </Box>
