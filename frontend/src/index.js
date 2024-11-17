@@ -4,7 +4,7 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
 import NewForm from './Components/SurveyForm/newform';
-
+import FormPreview from './Components/ResponseForm/response';
 
 
 const router = createBrowserRouter([
@@ -15,6 +15,10 @@ const router = createBrowserRouter([
   {
     path:"/forms",
     element:<NewForm/>
+  },
+  {
+    path:"/rform",
+    element:<FormPreview/>
   }
   
 
