@@ -7,6 +7,7 @@ const questionSchema = new mongoose.Schema({
     type: { type: String, required: true },
     options: { type: [String], default: [] },
     newOption: { type: String, default: "" },
+    required: { type: Boolean, default: false }
 });
 
 // Define the form schema
