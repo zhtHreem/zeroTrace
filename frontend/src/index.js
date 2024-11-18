@@ -5,11 +5,11 @@ import './index.css';
 import App from './App';
 import NewForm from './Components/SurveyForm/newform';
 import FormPreview from './Components/ResponseForm/response';
-
-
+import { Navbar,Footer } from './Components/HomePage/navbar';
+import Header from './Components/HomePage/header';
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: "/login",
     element: <App />,
   },
   {
@@ -19,6 +19,9 @@ const router = createBrowserRouter([
   {
     path:"/rform",
     element:<FormPreview/>
+  },{
+    path:"/",
+    element:<Header/>
   }
   
 
