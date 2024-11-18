@@ -13,11 +13,11 @@ const router = createBrowserRouter([
     element: <App />,
   },
   {
-    path:"/forms",
+    path:"/createform",
     element:<NewForm/>
   },
   {
-    path:"/rform",
+    path:"/form",
     element:<FormPreview/>
   },{
     path:"/",
