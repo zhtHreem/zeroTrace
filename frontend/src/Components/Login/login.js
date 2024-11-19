@@ -51,10 +51,6 @@ function Login() {
                         />
                     </div>
                 </form>
-
-                <p className="sign-up-text">
-                    Don’t have an account? <a href="/sign-up">Sign Up</a>
-                </p>
             </div>
 
             <div className="login-image" style={{ backgroundImage: `url(${backgroundImage})` }}>
