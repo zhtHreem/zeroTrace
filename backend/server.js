@@ -9,6 +9,7 @@ import FormData from 'form-data';
 //import ProductRoutes from './src/database/models/Product/route.js';
 import FormRoute from './src/database/models/Form/route.js'
 import ResponseForm from './src/database/models/ResponseForm/route.js';
+import Users from './src/database/models/User/route.js'
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -25,7 +26,7 @@ const __dirname = dirname(__filename);
 
 
 
-
+app.use('/api', Users);
 app.use('/api', FormRoute);
 app.use('/api',ResponseForm);
 app.use((err, req, res, next) => {
