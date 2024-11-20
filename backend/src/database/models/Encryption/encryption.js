@@ -1,5 +1,7 @@
-const crypto = require('crypto');
-require('dotenv').config(); // Load environment variables from .env file
+import crypto from 'crypto';
+import dotenv from 'dotenv';
+
+dotenv.config(); // Load environment variables from .env file
 
 // Retrieve the encryption key from environment variables
 const ENCRYPTION_KEY = Buffer.from(process.env.ENCRYPTION_KEY, 'hex'); // 256-bit key
@@ -11,7 +13,7 @@ if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
 }
 
 // Encrypt Function
-function encryptResponse(response) {
+export function encryptResponse(response) {
   console.log('Encryption Key (during encryption):', ENCRYPTION_KEY.toString('hex')); // Log the key
   const iv = crypto.randomBytes(IV_LENGTH); // Generate IV
   const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, iv); // Use the key
@@ -20,9 +22,8 @@ function encryptResponse(response) {
   return { encryptedData: encrypted, iv: iv.toString('hex') };
 }
 
-
 // Decrypt Function
-function decryptResponse(encrypted, iv) {
+export function decryptResponse(encrypted, iv) {
   console.log('Encryption Key (during decryption):', ENCRYPTION_KEY.toString('hex'));
   console.log('IV (during decryption):', iv);
   console.log('Encrypted Data (during decryption):', encrypted);
@@ -32,7 +33,3 @@ function decryptResponse(encrypted, iv) {
   decrypted += decipher.final('utf8');
   return decrypted;
 }
-
-
-
-module.exports = { encryptResponse, decryptResponse };

@@ -1,32 +1,19 @@
 // responseSchema.js
 import mongoose from 'mongoose';
 
-
 const responseSchema = new mongoose.Schema({
-  form: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Form',
-    required: true
+  form: { type: mongoose.Schema.Types.ObjectId, ref: 'Form', required: true },
+  user: { type: String, required: true },
+  answers: {
+    encryptedData: { type: String, required: true },
+    iv: { type: String, required: true },
   },
-  user: {
-   // type: mongoose.Schema.Types.ObjectId,
-   // ref: 'User',
-    type: String,
-    required: true
+  decryptedAnswers: {
+    type: [mongoose.Schema.Types.Mixed], // Store arrays or strings for questions
+    default: null,
   },
-  answers: [{
-    question: {
-      type: String, // This will store the question id
-      required: true
-    },
-    questionTitle: String, // Store the question title for easier retrieval
-    answer: mongoose.Schema.Types.Mixed, // Can store string or array based on question type
-    questionType: String // Store question type for context
-  }],
-  submittedAt: {
-    type: Date,
-    default: Date.now
-  }
+  unlockAt: { type: Date, required: true },
+  submittedAt: { type: Date, default: Date.now },
 });
 
 const Response = mongoose.model('Response', responseSchema);
