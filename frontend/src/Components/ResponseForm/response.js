@@ -1,15 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, Button, Stack, CircularProgress, FormControlLabel, Checkbox, Radio, RadioGroup, TextField } from '@mui/material';
+import { 
+  Box, 
+  Paper, 
+  Typography, 
+  Button, 
+  Stack, 
+  CircularProgress, 
+  FormControlLabel, 
+  Checkbox, 
+  Radio, 
+  RadioGroup, 
+  TextField, 
+  FormControl, 
+  Select, 
+  MenuItem, 
+  FormHelperText 
+} from '@mui/material';
 import { Navbar, Footer } from '../HomePage/navbar';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const FormResponsePreview = () => {
   const [formData, setFormData] = useState(null);
   const [allResponses, setAllResponses] = useState({});
   const [responseId, setResponseId] = useState(null);
   const [decryptedResponse, setDecryptedResponse] = useState(null);
+  const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle'); // idle, submitted, decrypted
   const formId = "673bb8d90e6c4cecc039a4ab";
-  const userId = '648cb2c4b159e4184d54aeda';
+  const userId = '648cb2c4b159e4184d54aeaa';
+
+  const clearForm = () => {
+    setAllResponses({});
+    setErrors({});
+    if (formData) {
+      const form = document.getElementById('responseForm');
+      if (form) {
+        form.reset();
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchForm = async () => {
@@ -19,6 +49,7 @@ const FormResponsePreview = () => {
         setFormData(data);
       } catch (error) {
         console.error('Error fetching form:', error);
+        toast.error('Error loading form data');
       }
     };
     fetchForm();
@@ -51,6 +82,17 @@ const FormResponsePreview = () => {
 
   const handleSubmit = async () => {
     try {
+      const newErrors = {};
+      const requiredQuestions = formData.questions.filter(q => q.required);
+      const unansweredRequired = requiredQuestions.filter(q => !allResponses[q._id]);
+      
+      if (unansweredRequired.length > 0) {
+        unansweredRequired.forEach(q => newErrors[q._id] = true);
+        setErrors(newErrors);
+        toast.error('Please answer all required questions before submitting');
+        return;
+      }
+
       const response = await fetch('http://localhost:5000/api/responses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -58,24 +100,54 @@ const FormResponsePreview = () => {
       });
 
       const data = await response.json();
-      if (response.ok) {
-        setResponseId(data.id);
-        setAllResponses({});
+      
+      if (!response.ok) {
+        switch (data.code) {
+          case 'DUPLICATE_SUBMISSION':
+            toast.warning(`You've already submitted this form on ${new Date(data.submittedAt).toLocaleDateString()}`);
+            break;
+          case 'FORM_NOT_FOUND':
+            toast.error('This form no longer exists');
+            break;
+          case 'MISSING_FIELDS':
+            toast.error('Please fill in all required fields');
+            break;
+          default:
+            toast.error('An error occurred while submitting the form');
+        }
+        throw new Error(data.message);
       }
+
+      toast.success('Form submitted successfully!');
+      setResponseId(data.id);
+      clearForm();
     } catch (error) {
       console.error('Error submitting response:', error);
+      if (!error.message.includes('already submitted')) {
+        toast.error('Failed to submit response. Please try again later.');
+      }
     }
   };
 
-  const renderQuestion = (question) => {
+  const renderQuestion = (question, index) => {
+    const props = {
+      question,
+      index,
+      onResponseChange: handleResponseChange,
+      error: errors[question._id],
+      value: allResponses[question._id]
+    };
+
     switch (question.type) {
       case 'Short answer':
         return (
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Type your answer here"
-            onChange={(e) => handleResponseChange(question._id, e.target.value)}
+          <TextField 
+            fullWidth 
+            variant="outlined" 
+            placeholder="Type your answer here" 
+            onChange={(e) => handleResponseChange(question._id, e.target.value)} 
+            error={errors[question._id]} 
+            helperText={errors[question._id] ? "This field is required" : ""} 
           />
         );
       case 'Paragraph':
@@ -87,109 +159,112 @@ const FormResponsePreview = () => {
             variant="outlined"
             placeholder="Type your detailed response here"
             onChange={(e) => handleResponseChange(question._id, e.target.value)}
+            error={errors[question._id]}
+            helperText={errors[question._id] ? "This field is required" : ""}
           />
         );
       case 'Multiple choice':
         return (
-          <RadioGroup onChange={(e) => handleResponseChange(question._id, e.target.value)}>
-            {question.options.map((option, index) => (
-              <FormControlLabel key={index} value={option} control={<Radio />} label={option} />
-            ))}
-          </RadioGroup>
+          <FormControl component="fieldset" fullWidth error={errors[question._id]} required={question.required}>
+            <RadioGroup onChange={(e) => handleResponseChange(question._id, e.target.value)} value={allResponses[question._id] || ''}>
+              {question.options.map((option, idx) => (
+                <FormControlLabel key={idx} value={option} control={<Radio />} label={option} />
+              ))}
+            </RadioGroup>
+            {errors[question._id] && <FormHelperText>This field is required</FormHelperText>}
+          </FormControl>
         );
       case 'Checkbox':
         return (
-          <Stack>
-            {question.options.map((option, index) => (
+          <FormControl component="fieldset" fullWidth error={errors[question._id]} required={question.required}>
+            {question.options.map((option, idx) => (
               <FormControlLabel
-                key={index}
+                key={idx}
                 control={
                   <Checkbox
+                    checked={(allResponses[question._id] || []).includes(option)}
                     onChange={(e) => {
-                      const currentSelection = allResponses[question._id] || [];
-                      const updatedSelection = e.target.checked
-                        ? [...currentSelection, option]
-                        : currentSelection.filter(item => item !== option);
-                      handleResponseChange(question._id, updatedSelection);
+                      const selected = allResponses[question._id] || [];
+                      const updated = e.target.checked
+                        ? [...selected, option]
+                        : selected.filter(item => item !== option);
+                      handleResponseChange(question._id, updated);
                     }}
                   />
                 }
                 label={option}
               />
             ))}
-          </Stack>
+            {errors[question._id] && <FormHelperText>This field is required</FormHelperText>}
+          </FormControl>
+        );
+      case 'Dropdown':
+        return (
+          <FormControl fullWidth error={errors[question._id]} required={question.required}>
+            <Select
+              onChange={(e) => handleResponseChange(question._id, e.target.value)}
+              value={allResponses[question._id] || ''}
+            >
+              <MenuItem value=""><em>None</em></MenuItem>
+              {question.options.map((option, idx) => (
+                <MenuItem key={idx} value={option}>{option}</MenuItem>
+              ))}
+            </Select>
+            {errors[question._id] && <FormHelperText>This field is required</FormHelperText>}
+          </FormControl>
         );
       default:
         return null;
     }
   };
 
-  const renderDecryptedResponse = () => {
-    return (
-      <Stack spacing={2} sx={{ mt: 4 }}>
-        {decryptedResponse.map((item, index) => (
-          <Paper key={index} elevation={2} sx={{ p: 2, backgroundColor: '#F8F9FA' }}>
-            <Typography variant="subtitle1" fontWeight="bold">
-              {item.questionTitle}
-            </Typography>
-            <Typography variant="body1">
-              {Array.isArray(item.answer) ? item.answer.join(', ') : item.answer}
-            </Typography>
-          </Paper>
-        ))}
-      </Stack>
-    );
-  };
+  const renderDecryptedResponse = () => (
+    <Stack spacing={2} sx={{ mt: 4 }}>
+      {decryptedResponse.map((item, index) => (
+        <Paper key={index} elevation={2} sx={{ p: 2, backgroundColor: '#F8F9FA' }}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            {item.questionTitle}
+          </Typography>
+          <Typography variant="body1">
+            {Array.isArray(item.answer) ? item.answer.join(', ') : item.answer}
+          </Typography>
+        </Paper>
+      ))}
+    </Stack>
+  );
 
-  if (!formData) return <CircularProgress />;
+  if (!formData) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
 
   return (
     <>
       <Navbar />
-      <Box sx={{ px: 4, py: 2 }}>
-        {status === 'idle' && (
-          <>
-            <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
-              <Typography variant="h4" sx={{ mb: 2 }}>
-                {formData.title}
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'gray' }}>
-                {formData.description}
-              </Typography>
-            </Paper>
-            <Stack spacing={4}>
-              {formData.questions.map((question, index) => (
-                <Paper key={index} elevation={3} sx={{ p: 4 }}>
-                  <Typography variant="subtitle1" sx={{ mb: 2 }}>
-                    {index + 1}. {question.title} {question.required && <span style={{ color: 'red' }}>*</span>}
-                  </Typography>
-                  {renderQuestion(question)}
-                </Paper>
-              ))}
-            </Stack>
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              sx={{
-                mt: 4,
-                backgroundColor: '#3A6351',
-                color: '#FFF',
-                '&:hover': { backgroundColor: '#2C4F3B' }
-              }}
-            >
-              Submit Response
-            </Button>
-          </>
-        )}
-
-        {status === 'submitted' && (
-          <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>
-            Response submitted. Decrypting... Please wait.
-          </Typography>
-        )}
-
-        {status === 'decrypted' && decryptedResponse && renderDecryptedResponse()}
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', px: 4 }}>
+        <Paper elevation={3} sx={{ width: '100%', mb: 4, p: 4, backgroundColor: '#C1CFA1' }}>
+          <Typography variant="h4" gutterBottom>{formData.title}</Typography>
+          <Typography variant="body1">{formData.description}</Typography>
+        </Paper>
+        <form id="responseForm">
+          <Stack spacing={4} sx={{ width: '100%', maxWidth: '800px' }}>
+            {formData.questions.map((question, index) => (
+              <Paper key={`${question._id}-${index}`} elevation={3} sx={{ p: 4 }}>
+                <Typography variant="h6" gutterBottom>
+                  {index + 1}. {question.title} {question.required && <span style={{ color: 'red' }}>*</span>}
+                </Typography>
+                {renderQuestion(question, index)}
+              </Paper>
+            ))}
+          </Stack>
+        </form>
+        <Button 
+          variant="contained" 
+          size="large" 
+          onClick={handleSubmit} 
+          sx={{ backgroundColor: '#3A6351', mt: 4, '&:hover': { backgroundColor: '#2C4F3B' } }}
+        >
+          Submit Response
+        </Button>
       </Box>
+      <ToastContainer position="top-right" autoClose={5000} />
       <Footer />
     </>
   );
