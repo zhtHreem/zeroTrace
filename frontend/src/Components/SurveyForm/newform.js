@@ -1,5 +1,6 @@
 import { Box, TextField, Input, Stack, Typography, Paper, FormControl, Select, InputLabel, MenuItem, Grid, Checkbox, FormControlLabel, Button, RadioGroup, Radio, IconButton, List, ListItem, ListItemText, Tooltip } from "@mui/material";
 import { Delete, DragIndicator, FileCopy, Preview, Edit, Add } from "@mui/icons-material";
+import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import React, { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Navbar,Footer } from "../HomePage/navbar";
@@ -8,14 +9,18 @@ export default function NewForm() {
     const [formDescription, setFormDescription] = useState("Description");
     const [questions, setQuestions] = useState([]);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
+    const [decryptionTime, setDecryptionTime] = useState(1);
+    const [decryptionUnit, setDecryptionUnit] = useState("hours");
     const userId = '648cb2c4b159e4184d54aeda';
 
     const handleSubmit = async () => {
         try {
+
+            const decryptionTimeInSeconds = calculateTotalSeconds(decryptionTime, decryptionUnit);
             const response = await fetch('http://localhost:5000/api/forms', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: formTitle, description: formDescription, questions: questions, user: userId })
+                body: JSON.stringify({ title: formTitle, description: formDescription, questions: questions, user: userId,decryptionTime: decryptionTimeInSeconds,decryptionUnit: "seconds" })
             });
             const data = await response.json();
             console.log('Form saved:', data);
@@ -70,6 +75,17 @@ export default function NewForm() {
 
     const handleQuestionUpdate = (questionId, field, value) => {
         setQuestions(questions.map(q => q.id === questionId ? { ...q, [field]: value } : q));
+    };
+
+
+    const calculateTotalSeconds = (time, unit) => {
+        switch(unit) {
+            case "seconds": return time;
+            case "minutes": return time * 60;
+            case "hours": return time * 3600;
+            case "days": return time * 86400;
+            default: return time * 3600; // default to hours
+        }
     };
 
     const renderDynamicInput = (question) => {
@@ -143,10 +159,22 @@ export default function NewForm() {
             <Navbar/>
             
         
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' ,overflow: "hidden"}}>
             <Box p={4} sx={{ backgroundColor: "#C1CFA1", width: '100%', mb: 4 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Stack direction="row"><Box component="img" sx={{ height: "10%", width: "10%" }} src={require("./images/surveyform.svg")} /><Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} disableUnderline readOnly={isPreviewMode} /></Stack>
+                <Stack px={4} direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                       <PendingActionsIcon fontSize="large"/>
+                       <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} disableUnderline readOnly={isPreviewMode} />
+                        <TextField label="Decrypt After" type="number" value={decryptionTime}  onChange={(e) => setDecryptionTime(Number(e.target.value))} InputProps={{ inputProps: { min: 1 } }} sx={{ width: 100 }}   disabled={isPreviewMode} />
+                            <FormControl sx={{ width: 120 }}>
+                                <Select  value={decryptionUnit}   onChange={(e) => setDecryptionUnit(e.target.value)} disabled={isPreviewMode} >
+                                    <MenuItem value="seconds">Seconds</MenuItem>
+                                    <MenuItem value="minutes">Minutes</MenuItem>
+                                    <MenuItem value="hours">Hours</MenuItem>
+                                    <MenuItem value="days">Days</MenuItem>
+                                </Select>
+                            </FormControl>
+                    </Stack>
                     <Stack direction="row" spacing={2}>
                         <Button startIcon={<Add />} onClick={handleAddQuestion} variant="contained" disabled={isPreviewMode} sx={{backgroundColor: "#3A6351", mt: 4, mb: 4, '&:hover': { backgroundColor: "#2C4F3B" }}}>Add Question</Button>
                         <Button startIcon={isPreviewMode ? <Edit /> : <Preview />} onClick={() => setIsPreviewMode(!isPreviewMode)} variant="contained" sx={{backgroundColor: "#3A6351", mt: 4, mb: 4, '&:hover': { backgroundColor: "#2C4F3B" }}}>{isPreviewMode ? "Edit Mode" : "Preview Mode"}</Button>
@@ -161,11 +189,11 @@ export default function NewForm() {
                 </Paper>
 
                 <DragDropContext onDragEnd={handleDragEnd}>
-                    <Droppable droppableId="questions">
+                    <Droppable droppableId="questions-list">
                         {(provided) => (
                             <div {...provided.droppableProps} ref={provided.innerRef} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                 {questions.map((question, index) => (
-                                    <Draggable key={question.id} draggableId={question.id.toString()} index={index} isDragDisabled={isPreviewMode}>
+                                    <Draggable key={question.id.toString()} draggableId={question.id.toString()} index={index} isDragDisabled={isPreviewMode}>
                                         {(provided) => (
                                             <Paper ref={provided.innerRef} {...provided.draggableProps} elevation={20} sx={{ width: "50%", padding: 5, mb: 2, display: 'flex', flexDirection: 'column', gap: 4 }}>
                                                 <Grid container direction="row" gap={4}>
