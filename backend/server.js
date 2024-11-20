@@ -1,4 +1,5 @@
 import express from 'express';
+import connectDB from './src/database/connectivity.js';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -8,6 +9,9 @@ import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import cron from 'node-cron';
+import FormRoute from './src/database/models/Form/route.js';
+import ResponseForm from './src/database/models/ResponseForm/route.js';
+import Users from './src/database/models/User/route.js';
 
 dotenv.config(); // Load environment variables
 
@@ -19,25 +23,12 @@ app.use(cors());
 app.use(express.json());
 app.use(bodyParser.json());
 
+// Resolve directory paths
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // MongoDB Connection
-const connectDB = async () => {
-  try {
-    const dbURI = process.env.MONGO_URI; // Use the environment variable for MongoDB URI
-    await mongoose.connect(dbURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log('MongoDB Atlas connected');
-  } catch (error) {
-    console.error('Error connecting to MongoDB:', error);
-    process.exit(1);
-  }
-};
-
-connectDB(); // Initialize the connection to MongoDB
+connectDB();
 
 // Encryption Logic
 const ENCRYPTION_KEY = Buffer.from(process.env.ENCRYPTION_KEY, 'hex'); // Retrieve key from .env
@@ -158,9 +149,16 @@ app.get('/decrypt/:id', async (req, res) => {
 
 app.get('/', (req, res) => res.send('API is running successfully'));
 
+// Additional Routes
+app.use('/api', Users);
+app.use('/api', FormRoute);
+app.use('/api', ResponseForm);
+
+// Error Handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
+// Start the server
 app.listen(port, () => console.log(`Server running on port ${port}`));
