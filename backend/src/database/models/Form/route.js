@@ -4,9 +4,11 @@ import Form from './schema.js'; // Import the Form model using ES modules
 
 const router = express.Router();
 
+
+
 // POST route to save a form
 router.post('/forms', async (req, res) => {
-    const { title, description, questions,user, } = req.body;
+    const { title, description, questions,user,decryptionTime,decryptionUnit } = req.body;
     console.log('Form data received:', req.body);
 
     try {
@@ -15,7 +17,7 @@ router.post('/forms', async (req, res) => {
             title,
             description,
             questions,
-            user,
+            user,decryptionTime,decryptionUnit
           
         });
 
