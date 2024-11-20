@@ -1,14 +1,16 @@
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 
-const connectDB = async ()=>{
- try{                                        //change it 
-    const mongoURI=process.env.MONGO_URI || //'mongodb+srv://admin:123@eventify.dkeujvr.mongodb.net/FamFest?retryWrites=true&w=majority&appName=eventify';
-    console.log("ok")
-    await mongoose.connect(mongoURI);
-    console.log('MongoDB connected...');
-} catch (error) {
-     console.error('Error connecting to MongoDB:', error.message);
-     process.exit(1); 
-}
+dotenv.config(); // Load environment variables from .env file
+const mongoose = require('mongoose');
+const connectDB = async () => {
+  try {
+    const dbURI = 'mongodb+srv://admin:123@eventify.dkeujvr.mongodb.net/ZeroTrace?retryWrites=true&w=majority&appName=eventify';
+    await mongoose.connect(dbURI);
+    console.log('MongoDB connected successfully');
+  } catch (err) {
+    console.error('MongoDB connection error:', err.message);
+  }
 };
-export default connectDB; 
+
+export default connectDB;
