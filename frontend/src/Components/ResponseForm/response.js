@@ -128,8 +128,7 @@ const FormResponsePreview = () => {
       const data = await response.json();
       
       if (!response.ok) {
-        console.log("date",data.submittedAt)
-        console.log("date",data)
+        
         switch (data.code) {
           case 'DUPLICATE_SUBMISSION':
             toast.warning(`You've already submitted this form `);
