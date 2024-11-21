@@ -3,6 +3,7 @@ import { Box, Paper, Typography, Button, Stack, CircularProgress, FormControlLab
 import { Navbar, Footer } from '../HomePage/navbar';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useParams } from 'react-router-dom';
 
 const FormResponsePreview = () => {
   const [formData, setFormData] = useState(null);
@@ -11,9 +12,16 @@ const FormResponsePreview = () => {
   const [decryptedResponse, setDecryptedResponse] = useState(null);
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle'); // idle, submitted, decrypted
-  const formId = "673f128f64efaa790dbefbb2";
-  const userId = '648cb2c4b159e4184d54ilqa';
+  
+  const userId = JSON.parse(localStorage.getItem('user'));
+ 
+   if (!userId) {
+  alert('You need to log in first!');
+  window.location.href = '/login';
+  } 
 
+  const { id } = useParams();
+  const formId = id //"673f128f64efaa790dbefbb2";
   const clearForm = () => {
     setAllResponses({});
     setErrors({});

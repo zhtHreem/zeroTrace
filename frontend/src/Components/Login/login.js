@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { GoogleLogin } from 'react-google-login';
 import backgroundImage from './assets/fingerprint.png';
 import './login.css';
@@ -6,6 +8,7 @@ import './login.css';
 const clientId = "723962808269-mqthfe2ndj39j2hh4bvgm4rc2d144r9n.apps.googleusercontent.com";
 
 function Login() {
+    const navigate = useNavigate();
     const [userData, setUserData] = useState({
         email: '',
         password: '',
@@ -50,8 +53,13 @@ function Login() {
             }
           
             const data = await response.json();
+            console.log("user id:",data.user._id);
             console.log('Login successful:', data);
+            localStorage.setItem('user', JSON.stringify(data.user._id));
+ 
             setError('');
+
+            navigate("/");
           } catch (error) {
             console.error('Error during login:', error.message);
             setError('Failed to login. Try again');

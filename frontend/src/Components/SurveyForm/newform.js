@@ -4,6 +4,8 @@ import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import React, { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Navbar,Footer } from "../HomePage/navbar";
+import FormSuccessPopup from "./popup";
+
 export default function NewForm() {
     const [formTitle, setFormTitle] = useState("Untitled Form");
     const [formDescription, setFormDescription] = useState("Description");
@@ -11,8 +13,17 @@ export default function NewForm() {
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [decryptionTime, setDecryptionTime] = useState(1);
     const [decryptionUnit, setDecryptionUnit] = useState("hours");
-    const userId = '648cb2c4b159e4184d54aeda';
+    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+    const [newFormId, setNewFormId] = useState(null);
+    //const userId = '648cb2c4b159e4184d54aeda';
+    const userId = JSON.parse(localStorage.getItem('user'));
 
+
+      // Check if userId is null or undefined
+     if (!userId) {
+      alert('You need to log in first!');
+      window.location.href = '/login';
+     } 
     const handleSubmit = async () => {
         try {
 
@@ -24,6 +35,10 @@ export default function NewForm() {
             });
             const data = await response.json();
             console.log('Form saved:', data);
+                        console.log('Form saved:', data._id);
+
+            setNewFormId(data.form._id);
+            setShowSuccessPopup(true);
         } catch (error) {
             console.error('Error saving form:', error);
         }
@@ -241,6 +256,14 @@ export default function NewForm() {
                 <Button variant="contained" size="large" sx={{ backgroundColor: "#3A6351", mt: 4, mb: 4, '&:hover': { backgroundColor: "#2C4F3B" } }} onClick={handleSubmit}>Submit</Button>
             </Box>
         </Box>
+  
+{showSuccessPopup && (
+    <FormSuccessPopup 
+        formId={newFormId} 
+        onClose={() => setShowSuccessPopup(false)} 
+    />
+
+)}
         <Footer/>
     </>
     );
