@@ -3,11 +3,15 @@ import ReactDOM from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 
 import './index.css';
+import ResponseForm from './Components/ResponseForm/response';
 import App from './App';
 import NewForm from './Components/SurveyForm/newform';
 import FormPreview from './Components/ResponseForm/response';
 import { Navbar,Footer } from './Components/HomePage/navbar';
 import Header from './Components/HomePage/header';
+import Recap from './Components/Recapcha/recapcha';
+import UserForms from './Components/User/forms';
+import UserProfile from './Components/User/profile';
 const router = createBrowserRouter([
   {
     path: "/login",
@@ -18,11 +22,21 @@ const router = createBrowserRouter([
     element:<NewForm/>
   },
   {
-    path:"/form",
+    path: "/recapcha",
+    element: <Recap />
+  },
+  {
+    path:"/form/:id",
     element:<FormPreview/>
   },{
     path:"/",
     element:<Header/>
+  },{
+    path:"/user/form",
+    element:<UserForms/>
+  },{
+    path:"/user/:search",
+    element:<UserProfile/>
   }
   
 
@@ -31,8 +45,6 @@ const router = createBrowserRouter([
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-
-  
       <RouterProvider router={router} />
 
 );
