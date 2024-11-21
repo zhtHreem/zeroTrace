@@ -8,12 +8,13 @@ const router = express.Router();
 
 // POST route to save a form
 router.post('/forms', async (req, res) => {
-    const { title, description, questions,user,decryptionTime,decryptionUnit } = req.body;
+    const {category, title, description, questions,user,decryptionTime,decryptionUnit } = req.body;
     console.log('Form data received:', req.body);
 
     try {
         // Create a new form using the data from the request
         const newForm = new Form({
+            category,
             title,
             description,
             questions,
@@ -73,4 +74,6 @@ router.get('/forms/user/:userId',  async (req, res) => {
         res.status(500).json({ message: 'Error fetching forms', error: error.message });
     }
 });
+
+
 export default router;
