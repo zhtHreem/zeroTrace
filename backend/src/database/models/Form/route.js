@@ -30,6 +30,20 @@ router.post('/forms', async (req, res) => {
     }
 });
 
+
+router.get('/forms', async (req, res) => {
+    try {
+      const forms = await Form.find();
+   //    console.log(forms);
+      res.status(200).json(forms);
+     
+    } catch (error) {
+      res.status(500).json({ error: `Error fetching titles: ${error.message}` });
+    }
+  });
+
+
+
 // Get a specific form by ID
 router.get('/forms/:formId', async (req, res) => {
     try {
@@ -37,7 +51,8 @@ router.get('/forms/:formId', async (req, res) => {
         if (!form) {
             return res.status(404).json({ message: 'Form not found' });
         }
-        res.json(form);
+       // res.json(form);
+       res.status(200).json(form);
     } catch (error) {
         console.error('Error fetching form:', error);
         res.status(500).json({ message: 'Error fetching form', error: error.message });
@@ -50,7 +65,9 @@ router.get('/forms/user/:userId',  async (req, res) => {
     try {
         const forms = await Form.find({ user: req.params.userId })
             .sort({ createdAt: -1 });
+            console.log("for",forms)
         res.json(forms);
+
     } catch (error) {
         console.error('Error fetching forms:', error);
         res.status(500).json({ message: 'Error fetching forms', error: error.message });
