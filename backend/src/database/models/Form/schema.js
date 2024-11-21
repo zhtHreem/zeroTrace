@@ -12,8 +12,10 @@ const questionSchema = new mongoose.Schema({
 
 // Define the form schema
 const formSchema = new mongoose.Schema({
+    category: { type: String, default: "" },
     title: { type: String, required: true },
     description: { type: String, required: true },
+    category: { type: String, default: "" },
     questions: { type: [questionSchema], default: [] },
     user: { 
         type:  mongoose.Schema.Types.ObjectId, 

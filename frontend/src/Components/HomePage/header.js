@@ -11,6 +11,7 @@ import kittenImage from './images/kitten.png';
 import handImage from './images/hand.png'; 
 import summerImage from './images/summer.png';
 import { Navbar,Footer } from './navbar';
+import Card from './Cardform/card'
 const float = keyframes` 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); }`; 
 const rotate = keyframes` 0% { transform: rotate(0deg); } 50% { transform: rotate(5deg); } 100% { transform: rotate(0deg); }`;
 
@@ -47,6 +48,7 @@ export default function Header() {
         </Grid> 
       </Grid> 
     </Box> 
+    < Card />
     <Footer/>
     </>
   ); 

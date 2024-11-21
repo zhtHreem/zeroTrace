@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { Response, SubmissionTracking } from './schema.js';
-import { encryptResponse, decryptResponse } from '../Encryption/encryption.js'; // Encryption logic
+import { encryptResponse, decryptResponse } from '../Encryption/encryption.js'; 
 import crypto from 'crypto';
 import  ZKPSubmissionManager  from './zkp.js';
 import Form from '../Form/schema.js';
