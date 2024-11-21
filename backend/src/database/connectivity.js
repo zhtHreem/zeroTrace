@@ -11,8 +11,6 @@ const connectDB = async () => {
       'mongodb+srv://admin:123@eventify.dkeujvr.mongodb.net/ZeroTrace?retryWrites=true&w=majority&appName=eventify';
     
     await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
     });
     
     console.log('MongoDB connected successfully');

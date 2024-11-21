@@ -40,23 +40,24 @@ const responseSchema = new mongoose.Schema({
   nullifier: {
     type: String,
     required: true
+  }, 
+
+  answers: {
+    encryptedData: { type: String, required: true },
+    iv: { type: String, required: true },
   },
-  answers: [{
-    question: {
-      type: String, // This will store the question id
-      required: true
-    },
-    questionTitle: String, // Store the question title for easier retrieval
-    answer: mongoose.Schema.Types.Mixed, // Can store string or array based on question type
-    questionType: String // Store question type for context
-  }],
-  submittedAt: {
-    type: Date,
-    default: Date.now
-  }
+
+  decryptedAnswers: {
+    type: [mongoose.Schema.Types.Mixed], // Store arrays or strings for questions
+    default: null},
+  unlockAt: { type: Date, required: true },
+  submittedAt: { type: Date, default: Date.now },
 });
 
 const Response = mongoose.model('Response', responseSchema);
+
+
 const SubmissionTracking = mongoose.model('SubmissionTracking', submissionTrackingSchema);
 
+export default Response;
 export  {Response,SubmissionTracking};
