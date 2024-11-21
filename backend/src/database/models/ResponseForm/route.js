@@ -1,52 +1,39 @@
-// responseRoutes.js
 import express from 'express';
 import mongoose from 'mongoose';
 import { Response, SubmissionTracking } from './schema.js';
-import Form from '../Form/schema.js';
 import { encryptResponse, decryptResponse } from '../Encryption/encryption.js'; // Encryption logic
 import crypto from 'crypto';
+import  ZKPSubmissionManager  from './zkp.js';
+import Form from '../Form/schema.js';
 
 const router = express.Router();
-
-// Function to create a one-way hash of user+form combination
-const createSubmissionHash = (userId, formId) => {
-  return crypto
-    .createHash('sha256')
-    .update(`${userId}-${formId}`)
-    .digest('hex');
-};
-
-// Function to create an anonymous identifier
-const createAnonymousId = (userId) => {
-  return crypto
-    .createHash('sha256')
-    .update(userId)
-    .digest('hex');
-};
+const zkpManager = new ZKPSubmissionManager();
 
 // Submit a response
 router.post('/responses', async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+
+
 
   try {
     const { formId, responses, user } = req.body;
 
+    // Validate input
     if (!formId || !responses || !user) {
       return res.status(400).json({ message: 'formId, responses, and user are required' });
     }
 
-    // Create submission hash
-    const submissionHash = createSubmissionHash(user, formId);
+    
 
-    // Check if user has already submitted
-    const existingSubmission = await SubmissionTracking.findOne({ submissionHash });
-    if (existingSubmission) {
-      return res.status(409).json({
+    // Generate ZKP commitment
+    const { commitment, nullifier } = await zkpManager.generateZKPCommitment(user, formId);
+
+    // Verify submission uniqueness
+    const isUniqueSubmission = await zkpManager.verifySubmissionUniqueness(commitment, nullifier,formId);
+    if (!isUniqueSubmission) {
+      return res.status(409).json({ 
         status: 'error',
         code: 'DUPLICATE_SUBMISSION',
-        message: 'You have already submitted a response for this form',
-        submittedAt: existingSubmission.submittedAt
+        message: 'You have already submitted a response for this form'
       });
     }
 
@@ -60,8 +47,6 @@ router.post('/responses', async (req, res) => {
       });
     }
 
-    // Create anonymized identifier for the user
-    const anonymousId = createAnonymousId(user);
 
     // Format answers with question details
     const formattedAnswers = form.questions.map(question => ({
@@ -73,53 +58,66 @@ router.post('/responses', async (req, res) => {
 
     // Encrypt the formatted answers
     const { encryptedData, iv } = encryptResponse(JSON.stringify(formattedAnswers));
+    // Add logging for encryption results
+    console.log('Encryption Results:', {
+      encryptedDataType: typeof encryptedData,
+      encryptedDataLength: encryptedData.length,
+      ivType: typeof iv,
+      ivLength: iv.length
+    });
 
+    
     // Set unlock time (e.g., 10 minutes from now)
+    console.log("time::",form.decryptionTime/60)
     const unlockAt = new Date();
-    unlockAt.setMinutes(unlockAt.getMinutes() + 10);
+    unlockAt.setMinutes(unlockAt.getMinutes() + (form.decryptionTime/60));
 
-    // Create new response
+    // Create new response with ZKP commitment
     const newResponse = new Response({
       form: formId,
-      user: anonymousId, // Anonymized user ID
+      commitment,  // Use ZKP commitment instead of user ID
+      nullifier,   // Store nullifier for additional security
+   //   answers: formattedAnswers
       answers: { encryptedData, iv }, // Store encrypted answers
       unlockAt
     });
 
-    // Track the submission
+    // Add logging before saving
+    console.log('New Response Object:', JSON.stringify(newResponse.toObject(), null, 2));
+    const savedResponse = await newResponse.save();
+        console.log('Saved Response:', JSON.stringify(savedResponse.toObject(), null, 2));
+
+     // Create submission tracking
     const submissionTracking = new SubmissionTracking({
       formId,
-      submissionHash
+      submissionHash: commitment,
+      nullifier
     });
 
-    // Save the response and submission tracking atomically
-    await Promise.all([
-      newResponse.save({ session }),
-      submissionTracking.save({ session })
-    ]);
 
-    await session.commitTransaction();
-    res.status(201).json({
+    await submissionTracking.save();
+   
+    res.status(201).json({ 
       status: 'success',
       code: 'SUBMISSION_SUCCESSFUL',
       message: 'Response submitted successfully',
       data: {
-        responseId: newResponse._id,
-        submittedAt: newResponse.submittedAt
+         responseId: savedResponse._id,
+        submittedAt: savedResponse.submittedAt,
+        commitment
       }
     });
+
   } catch (error) {
-    await session.abortTransaction();
+
     console.error('Error submitting response:', error);
-    res.status(500).json({
+    res.status(500).json({ 
       status: 'error',
       code: 'SUBMISSION_FAILED',
       message: 'Error submitting form response',
       error: error.message
     });
-  } finally {
-    session.endSession();
-  }
+  } 
 });
 
 // Endpoint to fetch and decrypt responses
@@ -156,5 +154,9 @@ router.get('/responses/:id', async (req, res) => {
     res.status(500).json({ message: 'Error fetching or decrypting response' });
   }
 });
+
+
+  
+
 
 export default router;

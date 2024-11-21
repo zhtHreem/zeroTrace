@@ -1,21 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Paper, 
-  Typography, 
-  Button, 
-  Stack, 
-  CircularProgress, 
-  FormControlLabel, 
-  Checkbox, 
-  Radio, 
-  RadioGroup, 
-  TextField, 
-  FormControl, 
-  Select, 
-  MenuItem, 
-  FormHelperText 
-} from '@mui/material';
+import { Box, Paper, Typography, Button, Stack, CircularProgress, FormControlLabel, Checkbox, Radio, RadioGroup, TextField, FormControl, Select, MenuItem, FormHelperText } from '@mui/material';
 import { Navbar, Footer } from '../HomePage/navbar';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -27,8 +11,8 @@ const FormResponsePreview = () => {
   const [decryptedResponse, setDecryptedResponse] = useState(null);
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle'); // idle, submitted, decrypted
-  const formId = "673bb8d90e6c4cecc039a4ab";
-  const userId = '648cb2c4b159e4184d54aeaa';
+  const formId = "673f128f64efaa790dbefbb2";
+  const userId = '648cb2c4b159e4184d54ilqa';
 
   const clearForm = () => {
     setAllResponses({});
@@ -102,9 +86,10 @@ const FormResponsePreview = () => {
       const data = await response.json();
       
       if (!response.ok) {
+        
         switch (data.code) {
           case 'DUPLICATE_SUBMISSION':
-            toast.warning(`You've already submitted this form on ${new Date(data.submittedAt).toLocaleDateString()}`);
+            toast.warning(`You've already submitted this form `);
             break;
           case 'FORM_NOT_FOUND':
             toast.error('This form no longer exists');
