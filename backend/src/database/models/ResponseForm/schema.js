@@ -9,7 +9,7 @@ const submissionTrackingSchema = new mongoose.Schema({
     ref: 'Form',
     required: true
   },
-  // Store hashed user+form combination
+  // Stores commitment combination
   submissionHash: {
     type: String,
     required: true,
@@ -31,12 +31,7 @@ const responseSchema = new mongoose.Schema({
     ref: 'Form',
     required: true
   } ,
- // user: {
-   // type: mongoose.Schema.Types.ObjectId,
-   // ref: 'User',
-  //  type: String,
-  //  required: true
-  //},
+
   commitment: {
     type: String,
     required: true,
