@@ -8,14 +8,13 @@ const UserForms = ({userId}) => {
   const [forms, setForms] = useState([]); // Initialize forms as an empty array
   const [loading, setLoading] = useState(true); // Track loading state
   const [error, setError] = useState(null); // Track errors
- // const userId = '648cb2c4b159e4184d54aeda';
   useEffect(() => {
     const fetchForms = async () => {
       try {
         const response = await fetch(`http://localhost:5000/api/forms/user/${userId}`);
         const data = await response.json();
         setForms(data); // Update forms with fetched data
-        console.log(data); 
+       // console.log(data); 
         setError(null); // Clear any previous errors
       } catch (err) {
         console.error('Failed to fetch forms:', err);
