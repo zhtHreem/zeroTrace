@@ -1,9 +1,5 @@
 // responseSchema.js
 import mongoose from 'mongoose';
-import crypto from 'crypto';
-
-
-
 
 
 // Schema to track unique submissions using hashed identifiers
@@ -19,6 +15,10 @@ const submissionTrackingSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  nullifier: {
+    type: String,
+    required: true
+  },
   submittedAt: {
     type: Date,
     default: Date.now
@@ -30,10 +30,19 @@ const responseSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Form',
     required: true
-  },
-  user: {
+  } ,
+ // user: {
    // type: mongoose.Schema.Types.ObjectId,
    // ref: 'User',
+  //  type: String,
+  //  required: true
+  //},
+  commitment: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  nullifier: {
     type: String,
     required: true
   },
