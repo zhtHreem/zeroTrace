@@ -11,6 +11,7 @@ export default function NewForm() {
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [decryptionTime, setDecryptionTime] = useState(1);
     const [decryptionUnit, setDecryptionUnit] = useState("hours");
+    const [category, setCategory] = useState ("");
     const userId = '648cb2c4b159e4184d54aeda';
 
     const handleSubmit = async () => {
@@ -20,7 +21,7 @@ export default function NewForm() {
             const response = await fetch('http://localhost:5000/api/forms', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: formTitle, description: formDescription, questions: questions, user: userId,decryptionTime: decryptionTimeInSeconds,decryptionUnit: "seconds" })
+                body: JSON.stringify({ category:category,title: formTitle, description: formDescription, questions: questions, user: userId,decryptionTime: decryptionTimeInSeconds,decryptionUnit: "seconds"})
             });
             const data = await response.json();
             console.log('Form saved:', data);
@@ -184,6 +185,17 @@ export default function NewForm() {
 
             <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                 <Paper elevation={20} sx={{ width: "50%", padding: 5, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <p style={{marginTop: 0, marginBottom: 0 }}>Form is created for:</p>
+                <FormControl style={{marginTop: 0, marginBottom: 0 }} fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Category</InputLabel>
+                <Select label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
+                     <MenuItem value="Finance Department">Finance Department</MenuItem>
+                      <MenuItem value="Operational Department">Operational Department</MenuItem>
+                     <MenuItem value="Marketing Department">Marketing Department</MenuItem>
+                     <MenuItem value="HR Department">HR Department</MenuItem>
+                     <MenuItem value="IT Department">IT Department</MenuItem>
+                </Select>
+              </FormControl>
                     <TextField value={formTitle} onChange={(e) => setFormTitle(e.target.value)} label="Required" variant="standard" InputProps={{ readOnly: isPreviewMode }} />
                     <TextField value={formDescription} onChange={(e) => setFormDescription(e.target.value)} label="Required" variant="standard" InputProps={{ readOnly: isPreviewMode }} />
                 </Paper>
