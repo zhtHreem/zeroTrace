@@ -58,6 +58,7 @@ const DropDownQuestion = ({ question, index, onResponseChange, error, value }) =
       value={value || ''}
     >
       <MenuItem value=""><em>None</em></MenuItem>
+      
       {question.options.map((option, optIndex) => (
         <MenuItem key={`${question._id}-${index}-${optIndex}`} value={option}>{option}</MenuItem>
       ))}
@@ -71,7 +72,7 @@ const FormResponsePreview = () => {
   const [allResponses, setAllResponses] = useState({});
   const [errors, setErrors] = useState({});
   const formId = "673bb8d90e6c4cecc039a4ab";
-  const userId = '648cb2c4b159e4184d54aeaa';
+  const userId = '648cb2c4b159e4184d54olqa';
 
   const clearForm = () => {
     setAllResponses({});
@@ -127,9 +128,11 @@ const FormResponsePreview = () => {
       const data = await response.json();
       
       if (!response.ok) {
+        console.log("date",data.submittedAt)
+        console.log("date",data)
         switch (data.code) {
           case 'DUPLICATE_SUBMISSION':
-            toast.warning(`You've already submitted this form on ${new Date(data.submittedAt).toLocaleDateString()}`);
+            toast.warning(`You've already submitted this form `);
             break;
           case 'FORM_NOT_FOUND':
             toast.error('This form no longer exists');
