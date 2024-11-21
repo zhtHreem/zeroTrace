@@ -16,8 +16,8 @@ const formSchema = new mongoose.Schema({
     description: { type: String, required: true },
     questions: { type: [questionSchema], default: [] },
     user: { 
-        type: String,  // mongoose.Schema.Types.ObjectId, 
-       // ref: 'User', // Assuming you have a User model
+        type:  mongoose.Schema.Types.ObjectId, 
+        ref: 'User', // Assuming you have a User model
         required: true 
     },
     decryptionTime: {
