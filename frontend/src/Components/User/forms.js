@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Avatar, Box, Container, Typography, Button, Paper, Card, CardContent, Chip } from '@mui/material';
 
 import axios from 'axios';
-import './card.css';
+
 
 const UserForms = ({userId}) => {
   const [forms, setForms] = useState([]); // Initialize forms as an empty array
