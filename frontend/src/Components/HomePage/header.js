@@ -29,8 +29,8 @@ export default function Header() {
           <Typography variant="h4" sx={{ color: '#666', mb: 4, fontSize: { xs: '1.25rem', md: '1.5rem' }, lineHeight: 1.6, fontWeight: 400 }}> 
           Easily design your survey in a matter of minutes. Access your audience on all platforms. Observe results visually and in real-time 
           </Typography> 
-          <Button variant="contained" sx={{ backgroundColor: "#EFBC9B", color: "white", padding: "12px 30px", fontSize: "1.1rem", borderRadius: "50px", textTransform: "none", boxShadow: '0 4px 15px rgba(255, 105, 180, 0.3)', transition: 'all 0.3s ease', '&:hover': { backgroundColor: "#C96868", transform: 'translateY(-2px)', boxShadow: '0 6px 20px rgba(255, 105, 180, 0.4)', } }}> 
-            Request a demo <ChevronRight sx={{ ml: 1 }} /> 
+          <Button variant="contained" href="/createform" sx={{ backgroundColor: "#EFBC9B", color: "white", padding: "12px 30px", fontSize: "1.1rem", borderRadius: "50px", textTransform: "none", boxShadow: '0 4px 15px rgba(255, 105, 180, 0.3)', transition: 'all 0.3s ease', '&:hover': { backgroundColor: "#C96868", transform: 'translateY(-2px)', boxShadow: '0 6px 20px rgba(255, 105, 180, 0.4)', } }}> 
+            Create a Survey <ChevronRight sx={{ ml: 1 }} /> 
           </Button> 
         </Grid> 
         <Grid item xs={12} md={6} sx={{ height: { xs: "400px", md: "600px" }, width: "100%", position: "relative" }}> 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './card.css';
 import formIcon from '../images/form.png'; // Use a generic form icon
 
 const FormCards = () => {
+  const navigate=useNavigate();
   const [forms, setForms] = useState([]); // Initialize forms as an empty array
   const [loading, setLoading] = useState(true); // Track loading state
   const [error, setError] = useState(null); // Track errors
@@ -46,7 +48,7 @@ const FormCards = () => {
 
   return (
     <div className="form-cards-container">
-      <h1>Form Titles</h1>
+      <h1>Explore Surveys</h1>
       <div className="form-cards-grid">
         {displayedForms.map((form) => (
           <div key={form._id} className="form-card">
@@ -57,7 +59,7 @@ const FormCards = () => {
       </div>
       {/* Show 'See More' button if there are more than 6 forms */}
       {!showAll && forms.length > 6 && (
-        <button className="see-more-button" onClick={() => setShowAll(true)}>
+        <button className="see-more-button" onClick={() => {navigate("/surveys");setShowAll(true)}}>
           See More
         </button>
       )}

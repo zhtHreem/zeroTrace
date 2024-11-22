@@ -14,7 +14,7 @@ const Navbar = () => {
   const theme = useTheme(), navigate = useNavigate(), isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const user = JSON.parse(localStorage.getItem('user'));
 
-  const pages = [{ name: 'Home', path: '/' }, { name: 'Surveys', path: '/surveys' }, { name: 'Create Survey', path: '/create-survey' }, { name: 'About', path: '/about' }];
+  const pages = [{ name: 'Home', path: '/' }, { name: 'Surveys', path: '/surveys' }, { name: 'About', path: '/about' }];
   const settings = user ? [{ name: 'Profile', path: `/user/${user}` }, { name: 'Logout', path: '/logout' }] : [{ name: 'Login', path: '/login' }];
 
   const handleOpenNavMenu = (event) => setAnchorElNav(event.currentTarget);

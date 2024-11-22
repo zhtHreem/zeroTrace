@@ -12,6 +12,7 @@ import Header from './Components/HomePage/header';
 import Recap from './Components/Recapcha/recapcha';
 import UserForms from './Components/User/forms';
 import UserProfile from './Components/User/profile';
+import Survey from './Components/Surveys/survey';
 const router = createBrowserRouter([
   {
     path: "/login",
@@ -37,6 +38,9 @@ const router = createBrowserRouter([
   },{
     path:"/user/:search",
     element:<UserProfile/>
+  },{
+    path:"/surveys",
+    element:<Survey/>
   }
   
 
