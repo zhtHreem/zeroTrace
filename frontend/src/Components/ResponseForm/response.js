@@ -20,6 +20,8 @@ const FormResponsePreview = () => {
   window.location.href = '/login';
   } 
 
+
+  
   const { id } = useParams();
   const formId = id //"673f128f64efaa790dbefbb2";
   const clearForm = () => {
@@ -39,6 +41,7 @@ const FormResponsePreview = () => {
         const response = await fetch(`http://localhost:5000/api/forms/${formId}`);
         const data = await response.json();
         setFormData(data);
+        
       } catch (error) {
         console.error('Error fetching form:', error);
         toast.error('Error loading form data');
@@ -74,6 +77,11 @@ const FormResponsePreview = () => {
 
   const handleSubmit = async () => {
     try {
+
+      if(formData.user===userId){
+          alert('You cannot fill your own form!');
+        }
+      else{
       const newErrors = {};
       const requiredQuestions = formData.questions.filter(q => q.required);
       const unansweredRequired = requiredQuestions.filter(q => !allResponses[q._id]);
@@ -114,12 +122,13 @@ const FormResponsePreview = () => {
       toast.success('Form submitted successfully!');
       setResponseId(data.id);
       clearForm();
-    } catch (error) {
+    }} catch (error) {
       console.error('Error submitting response:', error);
       if (!error.message.includes('already submitted')) {
         toast.error('Failed to submit response. Please try again later.');
       }
-    }
+    
+   }
   };
 
   const renderQuestion = (question, index) => {
