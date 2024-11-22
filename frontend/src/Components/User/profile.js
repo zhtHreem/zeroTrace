@@ -2,6 +2,7 @@ import React, { useState,useEffect} from 'react';
 import { useParams } from 'react-router-dom';
 import { Avatar, Box, Container, Typography, Button, Paper, Card, CardContent, Chip } from '@mui/material';
 import { Cake as CakeIcon, AddCircleOutline as AddIcon } from '@mui/icons-material';
+import PersonIcon from '@mui/icons-material/Person';
 import { Navbar,Footer } from '../HomePage/navbar';
 import UserForms from './forms';
 const UserProfile = () => {
@@ -64,12 +65,12 @@ const UserProfile = () => {
       <Paper elevation={3} sx={{ borderRadius: 4, mb: 3, p: 3, background: 'white' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Avatar sx={{ width: 150, height: 150, mb: 2, border: '4px solid pink', background: 'linear-gradient(45deg, #C8E4B2, #3A4D39)' }}>
-            <CakeIcon sx={{ fontSize: 100, color: 'white' }} />
+            <PersonIcon sx={{ fontSize: 100, color: 'white' }} />
           </Avatar>
           <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#C96868', textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}>
-            {getName(user.email)} 🍭
+            {getName(user.email)} 😊
           </Typography>
-          <Chip label="Survey Creator" color="secondary" variant="outlined" sx={{ mt: 1 }} />
+          <Chip label="User" color="secondary" variant="outlined" sx={{ mt: 1 }} />
         </Box>
       </Paper>
 
