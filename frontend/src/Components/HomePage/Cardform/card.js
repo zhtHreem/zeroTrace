@@ -51,18 +51,20 @@ const FormCards = () => {
             key={form._id}
             className="form-card"
             onClick={() => navigate(`/form/${form._id}`)} // Navigate to the form's route
+            
           >
             <img src={formIcon} alt="Form Icon" className="form-icon" />
             <h3>{form.title}</h3>
           </div>
         ))}
       </div>
+      {/* Conditional rendering for "See More" and "Show Less" buttons */}
       {!showAll && forms.length > 6 && (
         <button
           className="see-more-button"
-          onClick={() => {
-            navigate('/surveys');
-            setShowAll(true);
+          onClick={() => { 
+            navigate("/surveys"); 
+            setShowAll(true); 
           }}
         >
           See More

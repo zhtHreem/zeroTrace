@@ -6,6 +6,13 @@ const UserForms = ({ userId }) => {
   const [forms, setForms] = useState([]);
   const navigate = useNavigate();
 
+<<<<<<< HEAD
+=======
+const UserForms = ({userId}) => {
+  const [forms, setForms] = useState([]); // Initialize forms as an empty array
+  const [loading, setLoading] = useState(true); // Track loading state
+  const [error, setError] = useState(null); // Track errors
+>>>>>>> 69bb01f0452bf7fa05d1ae6b771517f0565dc2e3
   useEffect(() => {
     const fetchForms = async () => {
       try {

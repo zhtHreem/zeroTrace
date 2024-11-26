@@ -19,7 +19,7 @@ import { Navbar, Footer } from '../HomePage/navbar';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams } from 'react-router-dom';
-
+import Recaptcha from '../Recapcha/recapcha';
 const FormResponsePreview = () => {
   const [formData, setFormData] = useState(null);
   const [allResponses, setAllResponses] = useState({});
@@ -30,6 +30,7 @@ const FormResponsePreview = () => {
   const [status, setStatus] = useState('idle'); // idle, submitted, decrypted
   const [formStatus, setFormStatus] = useState('loading'); // loading, active, closed, draft
 
+  const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
   const userId = JSON.parse(localStorage.getItem('user'));
 
   if (!userId) {
@@ -43,6 +44,7 @@ const FormResponsePreview = () => {
   const clearForm = () => {
     setAllResponses({});
     setErrors({});
+    setIsCaptchaVerified(false);
     if (formData) {
       const form = document.getElementById('responseForm');
       if (form) {
@@ -104,6 +106,10 @@ const FormResponsePreview = () => {
     setAllResponses((prev) => ({ ...prev, [questionId]: value }));
   };
 
+  const handleCaptchaChange = (value) => {
+    setIsCaptchaVerified(!!value);
+  };
+
   const handleSubmit = async () => {
     try {
       if (formData.user === userId) {
@@ -116,6 +122,17 @@ const FormResponsePreview = () => {
         return;
       }
 
+
+      // Check if captcha is verified
+      if (!isCaptchaVerified) {
+        toast.error('Please complete the reCAPTCHA verification');
+        return;
+      }
+
+      if(formData.user===userId){
+          alert('You cannot fill your own form!');
+        }
+      else{
       const newErrors = {};
       const requiredQuestions = formData.questions.filter((q) => q.required);
       const unansweredRequired = requiredQuestions.filter((q) => !allResponses[q._id]);
@@ -280,10 +297,15 @@ const FormResponsePreview = () => {
             ))}
           </Stack>
         </form>
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleSubmit}
+
+        <Box sx={{ my: 2, display: 'flex', justifyContent: 'center' }}>
+          <Recaptcha onChange={handleCaptchaChange} />
+        </Box>
+        
+        <Button 
+          variant="contained" 
+          size="large" 
+          onClick={handleSubmit} 
           sx={{ backgroundColor: '#3A6351', mt: 4, '&:hover': { backgroundColor: '#2C4F3B' } }}
           disabled={formStatus !== 'active'}
         >
