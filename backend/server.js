@@ -10,7 +10,7 @@ import cron from 'node-cron';
 import FormRoute from './src/database/models/Form/route.js';
 import ResponseForm from './src/database/models/ResponseForm/route.js';
 import Users from './src/database/models/User/route.js';
-import { encryptResponse, decryptResponse } from './src/database/models/Encryption/encryption.js'; // Import encryption logic
+import { decryptResponse } from './src/database/models/Encryption/encryption.js'; // Import decryption logic
 import Response from './src/database/models/ResponseForm/schema.js'; // Import Response model
 
 dotenv.config(); // Load environment variables
@@ -36,20 +36,21 @@ cron.schedule('* * * * *', async () => {
   const now = new Date();
 
   try {
+    // Fetch responses that are eligible for decryption
     const responsesToUnlock = await Response.find({
-      unlockAt: { $lte: now },
+      unlockAt: { $lte: now }, // Check if the unlockAt time has passed
       decryptedAnswers: null, // Only decrypt if not already decrypted
     });
 
     for (const response of responsesToUnlock) {
       const { encryptedData, iv } = response.answers;
       try {
-        const decrypted = decryptResponse(encryptedData, iv);
+        const decrypted = decryptResponse(encryptedData, iv); // Decrypt the encrypted response data
         console.log('Decrypted Response:', decrypted);
 
         // Save decrypted data to the database
-        response.decryptedAnswers = JSON.parse(decrypted);
-        await response.save();
+        response.decryptedAnswers = JSON.parse(decrypted); // Store the decrypted data
+        await response.save(); // Save changes to the database
         console.log(`Response ${response._id} decrypted and saved.`);
       } catch (decryptionError) {
         console.error(`Failed to decrypt response ${response._id}:`, decryptionError);

@@ -1,5 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, Button, Stack, CircularProgress, FormControlLabel, Checkbox, Radio, RadioGroup, TextField, FormControl, Select, MenuItem, FormHelperText } from '@mui/material';
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  Stack,
+  FormControl,
+  Select,
+  MenuItem,
+  FormHelperText,
+  TextField,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  Checkbox,
+} from '@mui/material';
 import { Navbar, Footer } from '../HomePage/navbar';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -10,20 +25,21 @@ const FormResponsePreview = () => {
   const [allResponses, setAllResponses] = useState({});
   const [responseId, setResponseId] = useState(null);
   const [decryptedResponse, setDecryptedResponse] = useState(null);
+  const [unlockAt, setUnlockAt] = useState(null);
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle'); // idle, submitted, decrypted
-  
+  const [formStatus, setFormStatus] = useState('loading'); // loading, active, closed, draft
+
   const userId = JSON.parse(localStorage.getItem('user'));
- 
-   if (!userId) {
-  alert('You need to log in first!');
-  window.location.href = '/login';
-  } 
 
+  if (!userId) {
+    alert('You need to log in first!');
+    window.location.href = '/login';
+  }
 
-  
   const { id } = useParams();
-  const formId = id //"673f128f64efaa790dbefbb2";
+  const formId = id;
+
   const clearForm = () => {
     setAllResponses({});
     setErrors({});
@@ -35,16 +51,26 @@ const FormResponsePreview = () => {
     }
   };
 
+  // Fetch form data and status
   useEffect(() => {
     const fetchForm = async () => {
       try {
         const response = await fetch(`http://localhost:5000/api/forms/${formId}`);
         const data = await response.json();
+
+        if (data.status === 'draft') {
+          setFormStatus('draft');
+        } else if (data.status === 'active') {
+          setFormStatus('active');
+        } else if (data.status === 'closed') {
+          setFormStatus('closed');
+        }
+
         setFormData(data);
-        
       } catch (error) {
         console.error('Error fetching form:', error);
         toast.error('Error loading form data');
+        setFormStatus('error');
       }
     };
     fetchForm();
@@ -61,6 +87,9 @@ const FormResponsePreview = () => {
             setDecryptedResponse(data.decryptedAnswers);
             setStatus('decrypted');
             clearInterval(interval);
+          } else if (res.status === 403) {
+            const { unlockAt: unlockTime } = await res.json();
+            setUnlockAt(new Date(unlockTime));
           }
         } catch (error) {
           console.error('Error fetching decrypted response:', error);
@@ -72,22 +101,27 @@ const FormResponsePreview = () => {
   }, [responseId]);
 
   const handleResponseChange = (questionId, value) => {
-    setAllResponses(prev => ({ ...prev, [questionId]: value }));
+    setAllResponses((prev) => ({ ...prev, [questionId]: value }));
   };
 
   const handleSubmit = async () => {
     try {
+      if (formData.user === userId) {
+        alert('You cannot fill your own form!');
+        return;
+      }
 
-      if(formData.user===userId){
-          alert('You cannot fill your own form!');
-        }
-      else{
+      if (formStatus !== 'active') {
+        toast.error('This form is not active. Submissions are not allowed.');
+        return;
+      }
+
       const newErrors = {};
-      const requiredQuestions = formData.questions.filter(q => q.required);
-      const unansweredRequired = requiredQuestions.filter(q => !allResponses[q._id]);
-      
+      const requiredQuestions = formData.questions.filter((q) => q.required);
+      const unansweredRequired = requiredQuestions.filter((q) => !allResponses[q._id]);
+
       if (unansweredRequired.length > 0) {
-        unansweredRequired.forEach(q => newErrors[q._id] = true);
+        unansweredRequired.forEach((q) => (newErrors[q._id] = true));
         setErrors(newErrors);
         toast.error('Please answer all required questions before submitting');
         return;
@@ -96,16 +130,15 @@ const FormResponsePreview = () => {
       const response = await fetch('http://localhost:5000/api/responses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formId, responses: allResponses, user: userId })
+        body: JSON.stringify({ formId, responses: allResponses, user: userId }),
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
-        
         switch (data.code) {
           case 'DUPLICATE_SUBMISSION':
-            toast.warning(`You've already submitted this form `);
+            toast.warning(`You've already submitted this form`);
             break;
           case 'FORM_NOT_FOUND':
             toast.error('This form no longer exists');
@@ -120,36 +153,27 @@ const FormResponsePreview = () => {
       }
 
       toast.success('Form submitted successfully!');
-      setResponseId(data.id);
+      setResponseId(data.data.responseId);
+      setUnlockAt(new Date(data.data.unlockAt));
       clearForm();
-    }} catch (error) {
+    } catch (error) {
       console.error('Error submitting response:', error);
       if (!error.message.includes('already submitted')) {
         toast.error('Failed to submit response. Please try again later.');
       }
-    
-   }
+    }
   };
 
   const renderQuestion = (question, index) => {
-    const props = {
-      question,
-      index,
-      onResponseChange: handleResponseChange,
-      error: errors[question._id],
-      value: allResponses[question._id]
-    };
-
     switch (question.type) {
       case 'Short answer':
         return (
-          <TextField 
-            fullWidth 
-            variant="outlined" 
-            placeholder="Type your answer here" 
-            onChange={(e) => handleResponseChange(question._id, e.target.value)} 
-            error={errors[question._id]} 
-            helperText={errors[question._id] ? "This field is required" : ""} 
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Type your answer here"
+            onChange={(e) => handleResponseChange(question._id, e.target.value)}
+            required={question.required}
           />
         );
       case 'Paragraph':
@@ -161,24 +185,25 @@ const FormResponsePreview = () => {
             variant="outlined"
             placeholder="Type your detailed response here"
             onChange={(e) => handleResponseChange(question._id, e.target.value)}
-            error={errors[question._id]}
-            helperText={errors[question._id] ? "This field is required" : ""}
+            required={question.required}
           />
         );
       case 'Multiple choice':
         return (
-          <FormControl component="fieldset" fullWidth error={errors[question._id]} required={question.required}>
-            <RadioGroup onChange={(e) => handleResponseChange(question._id, e.target.value)} value={allResponses[question._id] || ''}>
+          <FormControl component="fieldset" fullWidth required={question.required}>
+            <RadioGroup
+              onChange={(e) => handleResponseChange(question._id, e.target.value)}
+              value={allResponses[question._id] || ''}
+            >
               {question.options.map((option, idx) => (
                 <FormControlLabel key={idx} value={option} control={<Radio />} label={option} />
               ))}
             </RadioGroup>
-            {errors[question._id] && <FormHelperText>This field is required</FormHelperText>}
           </FormControl>
         );
       case 'Checkbox':
         return (
-          <FormControl component="fieldset" fullWidth error={errors[question._id]} required={question.required}>
+          <FormControl component="fieldset" fullWidth required={question.required}>
             {question.options.map((option, idx) => (
               <FormControlLabel
                 key={idx}
@@ -189,7 +214,7 @@ const FormResponsePreview = () => {
                       const selected = allResponses[question._id] || [];
                       const updated = e.target.checked
                         ? [...selected, option]
-                        : selected.filter(item => item !== option);
+                        : selected.filter((item) => item !== option);
                       handleResponseChange(question._id, updated);
                     }}
                   />
@@ -197,57 +222,55 @@ const FormResponsePreview = () => {
                 label={option}
               />
             ))}
-            {errors[question._id] && <FormHelperText>This field is required</FormHelperText>}
           </FormControl>
         );
-      case 'Dropdown':
+      case 'Drop down':
         return (
-          <FormControl fullWidth error={errors[question._id]} required={question.required}>
+          <FormControl fullWidth required={question.required}>
             <Select
               onChange={(e) => handleResponseChange(question._id, e.target.value)}
               value={allResponses[question._id] || ''}
+              displayEmpty
             >
-              <MenuItem value=""><em>None</em></MenuItem>
+              <MenuItem value="" disabled>
+                <em>Select an option</em>
+              </MenuItem>
               {question.options.map((option, idx) => (
-                <MenuItem key={idx} value={option}>{option}</MenuItem>
+                <MenuItem key={idx} value={option}>
+                  {option}
+                </MenuItem>
               ))}
             </Select>
             {errors[question._id] && <FormHelperText>This field is required</FormHelperText>}
           </FormControl>
         );
       default:
-        return null;
+        console.error('Unknown question type:', question.type);
+        return <Typography>Unknown question type</Typography>;
     }
   };
-
-  const renderDecryptedResponse = () => (
-    <Stack spacing={2} sx={{ mt: 4 }}>
-      {decryptedResponse.map((item, index) => (
-        <Paper key={index} elevation={2} sx={{ p: 2, backgroundColor: '#F8F9FA' }}>
-          <Typography variant="subtitle1" fontWeight="bold">
-            {item.questionTitle}
-          </Typography>
-          <Typography variant="body1">
-            {Array.isArray(item.answer) ? item.answer.join(', ') : item.answer}
-          </Typography>
-        </Paper>
-      ))}
-    </Stack>
-  );
-
-  if (!formData) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
 
   return (
     <>
       <Navbar />
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', px: 4 }}>
         <Paper elevation={3} sx={{ width: '100%', mb: 4, p: 4, backgroundColor: '#C1CFA1' }}>
-          <Typography variant="h4" gutterBottom>{formData.title}</Typography>
-          <Typography variant="body1">{formData.description}</Typography>
+          <Typography variant="h4" gutterBottom>{formData?.title}</Typography>
+          <Typography variant="body1">{formData?.description}</Typography>
+          {formStatus === 'draft' && (
+            <Typography variant="body2" color="error">
+              This form is in draft mode and cannot accept responses.
+            </Typography>
+          )}
+          {formStatus === 'closed' && (
+            <Typography variant="body2" color="error">
+              This form is closed and cannot accept responses.
+            </Typography>
+          )}
         </Paper>
         <form id="responseForm">
           <Stack spacing={4} sx={{ width: '100%', maxWidth: '800px' }}>
-            {formData.questions.map((question, index) => (
+            {formStatus === 'active' && formData?.questions.map((question, index) => (
               <Paper key={`${question._id}-${index}`} elevation={3} sx={{ p: 4 }}>
                 <Typography variant="h6" gutterBottom>
                   {index + 1}. {question.title} {question.required && <span style={{ color: 'red' }}>*</span>}
@@ -257,14 +280,34 @@ const FormResponsePreview = () => {
             ))}
           </Stack>
         </form>
-        <Button 
-          variant="contained" 
-          size="large" 
-          onClick={handleSubmit} 
+        <Button
+          variant="contained"
+          size="large"
+          onClick={handleSubmit}
           sx={{ backgroundColor: '#3A6351', mt: 4, '&:hover': { backgroundColor: '#2C4F3B' } }}
+          disabled={formStatus !== 'active'}
         >
           Submit Response
         </Button>
+        {unlockAt && (
+          <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+            Decryption will be available at: {new Date(unlockAt).toLocaleString()}
+          </Typography>
+        )}
+        {status === 'decrypted' && (
+          <Stack spacing={2} sx={{ mt: 4 }}>
+            {decryptedResponse.map((item, index) => (
+              <Paper key={index} elevation={2} sx={{ p: 2, backgroundColor: '#F8F9FA' }}>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  {item.questionTitle}
+                </Typography>
+                <Typography variant="body1">
+                  {Array.isArray(item.answer) ? item.answer.join(', ') : item.answer}
+                </Typography>
+              </Paper>
+            ))}
+          </Stack>
+        )}
       </Box>
       <ToastContainer position="top-right" autoClose={5000} />
       <Footer />

@@ -3,17 +3,15 @@ import mongoose from 'mongoose';
 import { Response, SubmissionTracking } from './schema.js';
 import { encryptResponse, decryptResponse } from '../Encryption/encryption.js'; 
 import crypto from 'crypto';
-import  ZKPSubmissionManager  from './zkp.js';
+import ZKPSubmissionManager from './zkp.js';
 import Form from '../Form/schema.js';
+import moment from 'moment'; // For dynamic time calculation
 
 const router = express.Router();
 const zkpManager = new ZKPSubmissionManager();
 
 // Submit a response
 router.post('/responses', async (req, res) => {
-
-
-
   try {
     const { formId, responses, user } = req.body;
 
@@ -22,13 +20,11 @@ router.post('/responses', async (req, res) => {
       return res.status(400).json({ message: 'formId, responses, and user are required' });
     }
 
-    
-
     // Generate ZKP commitment
     const { commitment, nullifier } = await zkpManager.generateZKPCommitment(user, formId);
 
     // Verify submission uniqueness
-    const isUniqueSubmission = await zkpManager.verifySubmissionUniqueness(commitment, nullifier,formId);
+    const isUniqueSubmission = await zkpManager.verifySubmissionUniqueness(commitment, nullifier, formId);
     if (!isUniqueSubmission) {
       return res.status(409).json({ 
         status: 'error',
@@ -47,7 +43,6 @@ router.post('/responses', async (req, res) => {
       });
     }
 
-
     // Format answers with question details
     const formattedAnswers = form.questions.map(question => ({
       question: question._id.toString(),
@@ -58,58 +53,41 @@ router.post('/responses', async (req, res) => {
 
     // Encrypt the formatted answers
     const { encryptedData, iv } = encryptResponse(JSON.stringify(formattedAnswers));
-    // Add logging for encryption results
-    console.log('Encryption Results:', {
-      encryptedDataType: typeof encryptedData,
-      encryptedDataLength: encryptedData.length,
-      ivType: typeof iv,
-      ivLength: iv.length
-    });
 
-    
-    // Set unlock time (e.g., 10 minutes from now)
-    console.log("time::",form.decryptionTime/60)
-    const unlockAt = new Date();
-    unlockAt.setMinutes(unlockAt.getMinutes() + (form.decryptionTime/60));
+    // Calculate unlock time dynamically based on form settings
+    const unlockAt = moment().add(form.decryptionTime, form.decryptionUnit).toDate();
 
     // Create new response with ZKP commitment
     const newResponse = new Response({
       form: formId,
-      commitment,  // Use ZKP commitment instead of user ID
-      nullifier,   // Store nullifier for additional security
-   //   answers: formattedAnswers
+      commitment, // Use ZKP commitment instead of user ID
+      nullifier,  // Store nullifier for additional security
       answers: { encryptedData, iv }, // Store encrypted answers
       unlockAt
     });
 
-    // Add logging before saving
-    console.log('New Response Object:', JSON.stringify(newResponse.toObject(), null, 2));
     const savedResponse = await newResponse.save();
-        console.log('Saved Response:', JSON.stringify(savedResponse.toObject(), null, 2));
 
-     // Create submission tracking
+    // Create submission tracking
     const submissionTracking = new SubmissionTracking({
       formId,
       submissionHash: commitment,
       nullifier
     });
-
-
     await submissionTracking.save();
-   
+
     res.status(201).json({ 
       status: 'success',
       code: 'SUBMISSION_SUCCESSFUL',
       message: 'Response submitted successfully',
       data: {
-         responseId: savedResponse._id,
-        submittedAt: savedResponse.submittedAt,
+        responseId: savedResponse._id,
+        submittedAt: savedResponse.createdAt,
+        unlockAt: savedResponse.unlockAt,
         commitment
       }
     });
-
   } catch (error) {
-
     console.error('Error submitting response:', error);
     res.status(500).json({ 
       status: 'error',
@@ -117,7 +95,7 @@ router.post('/responses', async (req, res) => {
       message: 'Error submitting form response',
       error: error.message
     });
-  } 
+  }
 });
 
 // Endpoint to fetch and decrypt responses
@@ -155,8 +133,24 @@ router.get('/responses/:id', async (req, res) => {
   }
 });
 
+// Fetch all responses for a specific form
+router.get('/forms/:formId/responses', async (req, res) => {
+  try {
+    const { formId } = req.params;
 
-  
+    // Find all responses associated with the specified form
+    const responses = await Response.find({ form: formId });
 
+    const formattedResponses = responses.map((response) => ({
+      decrypted: response.decryptedAnswers !== null, // Check if the response is decrypted
+      answers: response.decryptedAnswers || null,    // Return decrypted answers if available
+    }));
+
+    res.status(200).json(formattedResponses);
+  } catch (error) {
+    console.error('Error fetching responses:', error);
+    res.status(500).json({ message: 'Error fetching responses' });
+  }
+});
 
 export default router;
