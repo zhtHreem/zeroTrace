@@ -1,4 +1,4 @@
-import React, { useState, } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { GoogleLogin } from 'react-google-login';
@@ -24,6 +24,13 @@ function Login() {
         // Basic form validation
         if (!userData.email || !userData.password) {
           setError('Email and password are required');
+          return;
+        }
+
+        // Password validation: minimum 8 characters, at least one letter and one number
+        const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+        if (!passwordPattern.test(userData.password)) {
+          setError('Password must be at least 8 characters long and contain both letters and numbers.');
           return;
         }
       
@@ -54,12 +61,11 @@ function Login() {
             }
           
             const data = await response.json();
-            console.log("user id:",data.user._id);
+            console.log("user id:", data.user._id);
             console.log('Login successful:', data);
             localStorage.setItem('user', JSON.stringify(data.user._id));
  
             setError('');
-
             navigate("/");
           } catch (error) {
             console.error('Error during login:', error.message);
@@ -87,7 +93,6 @@ function Login() {
         }));
       };
       
-
     const onFailure = (res) => {
         console.log("Login Failed! res: ", res);
     };
