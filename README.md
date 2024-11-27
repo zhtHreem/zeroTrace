@@ -26,6 +26,11 @@ With features like verifiable response uniqueness, bot prevention, and time-lock
 
 - **Homepage**:  
   View surveys available for participation .  
+- **Encryption Key Generation**
+
+  use command 
+  node -e "console.log(require('crypto').randomBytes(32).toString('base64'));"
+  to generate a 256-bit key you need to add in backend/.env file
 
 - **Profile Page**:  
   - **Survey Management**:  
