@@ -3,28 +3,35 @@ import { Card, CardContent, Typography, Button, Box, Chip } from '@mui/material'
 import { useNavigate } from 'react-router-dom';
 
 const UserForms = ({ userId }) => {
-  const [forms, setForms] = useState([]);
-  const navigate = useNavigate();
-
-<<<<<<< HEAD
-=======
-const UserForms = ({userId}) => {
   const [forms, setForms] = useState([]); // Initialize forms as an empty array
   const [loading, setLoading] = useState(true); // Track loading state
   const [error, setError] = useState(null); // Track errors
->>>>>>> 69bb01f0452bf7fa05d1ae6b771517f0565dc2e3
+  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchForms = async () => {
       try {
+        setLoading(true);
         const response = await fetch(`http://localhost:5000/api/forms/user/${userId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch forms');
+        }
         const data = await response.json();
         setForms(data);
       } catch (err) {
         console.error('Failed to fetch forms:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchForms();
+    if (userId) {
+      fetchForms();
+    } else {
+      setError('User ID is required to fetch forms');
+      setLoading(false);
+    }
   }, [userId]);
 
   const handleActivate = async (formId) => {
@@ -34,21 +41,45 @@ const UserForms = ({userId}) => {
       });
 
       if (response.ok) {
-        alert('Survey activated successfully!');
+        const data = await response.json();
+        const { encryptionEndTime, activationTime } = data.form;
+
+        alert(
+          `Survey activated successfully!\nStart Time: ${new Date(
+            activationTime
+          ).toLocaleString()}\nEnd Time: ${new Date(encryptionEndTime).toLocaleString()}`
+        );
+
         // Update local state to reflect activation
         setForms((prevForms) =>
           prevForms.map((form) =>
-            form._id === formId ? { ...form, status: 'active', activationTime: new Date() } : form
+            form._id === formId
+              ? {
+                  ...form,
+                  status: 'active',
+                  activationTime: new Date(activationTime),
+                  encryptionEndTime: new Date(encryptionEndTime),
+                }
+              : form
           )
         );
       } else {
-        alert('Failed to activate survey. Please try again.');
+        const errorData = await response.json();
+        alert(`Failed to activate survey: ${errorData.message}`);
       }
     } catch (err) {
       console.error('Error activating survey:', err);
       alert('An error occurred while activating the survey.');
     }
   };
+
+  if (loading) {
+    return <Typography>Loading surveys...</Typography>;
+  }
+
+  if (error) {
+    return <Typography color="error">{error}</Typography>;
+  }
 
   if (!forms.length) {
     return <Typography>No surveys found.</Typography>;
@@ -61,6 +92,11 @@ const UserForms = ({userId}) => {
           <CardContent>
             <Typography variant="h6">{form.title}</Typography>
             <Typography variant="body2">{form.description}</Typography>
+            {form.status === 'active' && (
+              <Typography variant="body2" color="success.main">
+                Activation Ends: {new Date(form.encryptionEndTime).toLocaleString()}
+              </Typography>
+            )}
             <Box sx={{ display: 'flex', gap: 2, mt: 2, alignItems: 'center' }}>
               <Chip
                 label={form.status === 'active' ? 'Active' : form.status === 'closed' ? 'Closed' : 'Draft'}

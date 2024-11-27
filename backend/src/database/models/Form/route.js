@@ -65,13 +65,13 @@ router.get('/forms/user/:userId', async (req, res) => {
     }
 });
 
-// Activate a form
+/// Activate a form
 router.post('/forms/activate/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const activationTime = new Date();
 
-        // Update the form with activation status and calculate encryption end time
+        // Fetch the form by ID
         const form = await Form.findById(id);
         if (!form) {
             return res.status(404).json({ message: 'Form not found' });
@@ -81,7 +81,7 @@ router.post('/forms/activate/:id', async (req, res) => {
             return res.status(400).json({ message: 'Only draft forms can be activated.' });
         }
 
-        // Calculate encryption end time based on decryptionTime and decryptionUnit
+        // Calculate encryption end time
         const decryptionUnitToMilliseconds = {
             seconds: 1000,
             minutes: 60 * 1000,
@@ -98,12 +98,19 @@ router.post('/forms/activate/:id', async (req, res) => {
         form.encryptionEndTime = encryptionEndTime;
         await form.save();
 
+        // Schedule deactivation
+        setTimeout(async () => {
+            form.status = 'closed';
+            await form.save();
+        }, encryptionEndTime - activationTime);
+
         res.json({ message: 'Form activated successfully', form });
     } catch (error) {
         console.error('Error activating form:', error);
         res.status(500).json({ error: 'Failed to activate form' });
     }
 });
+
 
 // Validate form status before submission
 router.post('/forms/:formId/responses', async (req, res) => {

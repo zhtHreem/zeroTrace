@@ -1,174 +1,255 @@
 import {
-    Box,
-    TextField,
-    Input,
-    Stack,
-    Typography,
-    Paper,
-    FormControl,
-    Select,
-    InputLabel,
-    MenuItem,
-    Grid,
-    Checkbox,
-    FormControlLabel,
-    Button,
-    RadioGroup,
-    Radio,
-    IconButton,
-    List,
-    ListItem,
-    ListItemText,
-    Tooltip,
-  } from "@mui/material";
-  import { Delete, DragIndicator, FileCopy, Preview, Edit, Add } from "@mui/icons-material";
-  import PendingActionsIcon from '@mui/icons-material/PendingActions';
-  import React, { useState } from "react";
-  import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-  import { Navbar, Footer } from "../HomePage/navbar";
-  import FormSuccessPopup from "./popup";
-  
-  export default function NewForm() {
-    const [formTitle, setFormTitle] = useState("Untitled Form");
-    const [formDescription, setFormDescription] = useState("Description");
-    const [questions, setQuestions] = useState([]);
-    const [isPreviewMode, setIsPreviewMode] = useState(false);
-    const [decryptionTime, setDecryptionTime] = useState(1);
-    const [decryptionUnit, setDecryptionUnit] = useState("hours");
-    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-    const [newFormId, setNewFormId] = useState(null);
-    const userId = JSON.parse(localStorage.getItem('user'));
-    const [category, setCategory] = useState("");
-  
-    if (!userId) {
-      alert('You need to log in first!');
-      window.location.href = '/login';
+  Box,
+  TextField,
+  Input,
+  Stack,
+  Typography,
+  Paper,
+  FormControl,
+  Select,
+  InputLabel,
+  MenuItem,
+  Grid,
+  Checkbox,
+  FormControlLabel,
+  Button,
+  RadioGroup,
+  Radio,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Tooltip,
+} from "@mui/material";
+import { Delete, DragIndicator, FileCopy, Preview, Edit, Add } from "@mui/icons-material";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import React, { useState } from "react";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { Navbar, Footer } from "../HomePage/navbar";
+import FormSuccessPopup from "./popup";
+
+export default function NewForm() {
+  const [formTitle, setFormTitle] = useState("Untitled Form");
+  const [formDescription, setFormDescription] = useState("Description");
+  const [questions, setQuestions] = useState([]);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [decryptionTime, setDecryptionTime] = useState(1);
+  const [decryptionUnit, setDecryptionUnit] = useState("hours");
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [newFormId, setNewFormId] = useState(null);
+  const userId = JSON.parse(localStorage.getItem("user"));
+  const [category, setCategory] = useState("");
+
+  if (!userId) {
+    alert("You need to log in first!");
+    window.location.href = "/login";
+  }
+
+  const handleSubmit = async () => {
+    try {
+      if (!validateForm()) {
+        return;
+      }
+
+      const decryptionTimeInSeconds = calculateTotalSeconds(decryptionTime, decryptionUnit);
+      const response = await fetch("http://localhost:5000/api/forms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category,
+          title: formTitle,
+          description: formDescription,
+          questions,
+          user: userId,
+          decryptionTime: decryptionTimeInSeconds,
+          decryptionUnit: "seconds", // Always store in seconds in backend
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error saving form");
+      }
+
+      const data = await response.json();
+      console.log("Form saved:", data);
+
+      setNewFormId(data.form._id);
+      setShowSuccessPopup(true);
+    } catch (error) {
+      console.error("Error saving form:", error);
+      alert(error.message || "Error occurred while saving the form.");
     }
-  
-    const handleSubmit = async () => {
-      try {
-        if (!validateForm()) {
-          return;
-        }
-  
-        const decryptionTimeInSeconds = calculateTotalSeconds(decryptionTime, decryptionUnit);
-        const response = await fetch('http://localhost:5000/api/forms', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            category: category,
-            title: formTitle,
-            description: formDescription,
-            questions: questions,
-            user: userId,
-            decryptionTime: decryptionTimeInSeconds,
-            decryptionUnit: "seconds", // Always store in seconds in backend
-          }),
-        });
-  
-        const data = await response.json();
-        console.log('Form saved:', data);
-  
-        setNewFormId(data.form._id);
-        setShowSuccessPopup(true);
-      } catch (error) {
-        console.error('Error saving form:', error);
-      }
+  };
+
+  const validateForm = () => {
+    if (!formTitle.trim() || !formDescription.trim()) {
+      alert("Form title and description are required!");
+      return false;
+    }
+
+    if (decryptionTime < 1) {
+      alert("Decryption time must be at least 1 unit!");
+      return false;
+    }
+
+    if (!category.trim()) {
+      alert("Category is required!");
+      return false;
+    }
+
+    if (questions.length === 0) {
+      alert("At least one question must be added!");
+      return false;
+    }
+
+    return true;
+  };
+
+  const calculateTotalSeconds = (time, unit) => {
+    switch (unit) {
+      case "seconds":
+        return time;
+      case "minutes":
+        return time * 60;
+      case "hours":
+        return time * 3600;
+      case "days":
+        return time * 86400;
+      default:
+        return time * 3600; // Default to hours
+    }
+  };
+
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    const items = Array.from(questions);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    setQuestions(items);
+  };
+
+  const handleAddQuestion = () => {
+    const newQuestion = {
+      id: Date.now(),
+      title: "Untitled Question",
+      type: "",
+      options: [],
+      newOption: "",
+      required: false,
     };
-  
-    const validateForm = () => {
-      if (!formTitle.trim() || !formDescription.trim()) {
-        alert('Form title and description are required!');
-        return false;
-      }
-  
-      if (decryptionTime < 1) {
-        alert('Decryption time must be at least 1 unit!');
-        return false;
-      }
-  
-      if (!category.trim()) {
-        alert('Category is required!');
-        return false;
-      }
-  
-      return true;
+    setQuestions([...questions, newQuestion]);
+  };
+
+  const handleDuplicate = (question) => {
+    const duplicatedQuestion = {
+      ...question,
+      id: Date.now(),
+      title: `${question.title} (Copy)`,
     };
-  
-    const calculateTotalSeconds = (time, unit) => {
-      switch (unit) {
-        case "seconds": return time;
-        case "minutes": return time * 60;
-        case "hours": return time * 3600;
-        case "days": return time * 86400;
-        default: return time * 3600; // Default to hours
-      }
-    };
-  
-    const handleDragEnd = (result) => {
-      if (!result.destination) return;
-      const items = Array.from(questions);
-      const [reorderedItem] = items.splice(result.source.index, 1);
-      items.splice(result.destination.index, 0, reorderedItem);
-      setQuestions(items);
-    };
-  
-    const handleAddQuestion = () => {
-      const newQuestion = { id: Date.now(), title: "Untitled Question", type: "", options: [], newOption: "", required: false };
-      setQuestions([...questions, newQuestion]);
-    };
-  
-    const handleDuplicate = (question) => {
-      const duplicatedQuestion = { ...question, id: Date.now(), title: `${question.title} (Copy)` };
-      setQuestions([...questions, duplicatedQuestion]);
-    };
-  
-    const handleAddOption = (questionId) => {
-      setQuestions((prevQuestions) =>
-        prevQuestions.map(q =>
-          q.id === questionId && q.newOption.trim() !== ""
-            ? {
+    setQuestions([...questions, duplicatedQuestion]);
+  };
+
+  const handleAddOption = (questionId) => {
+    setQuestions((prevQuestions) =>
+      prevQuestions.map((q) =>
+        q.id === questionId && q.newOption.trim() !== ""
+          ? {
               ...q,
               options: [...q.options, q.newOption],
               newOption: "",
             }
-            : q
-        )
-      );
-    };
-  
-    const handleRemoveOption = (questionId, optionIndex) => {
-      setQuestions(questions.map(q => q.id === questionId ? { ...q, options: q.options.filter((_, i) => i !== optionIndex) } : q));
-    };
-  
-    const handleRemoveQuestion = (id) => {
-      setQuestions(questions.filter(question => question.id !== id));
-    };
-  
-    const handleQuestionUpdate = (questionId, field, value) => {
-      setQuestions(questions.map(q => q.id === questionId ? { ...q, [field]: value } : q));
-    };
-  
-    const renderDynamicInput = (question) => {
-      switch (question.type) {
-        case "Checkbox":
-          return (
-            <FormControl component="fieldset">
-              <List>
-                {question.options.length > 0 ? question.options.map((option, index) => (
-                  <ListItem key={index} secondaryAction={!isPreviewMode && (<IconButton edge="end" onClick={() => handleRemoveOption(question.id, index)}><Delete /></IconButton>)}>
-                    <FormControlLabel required={question.required && isPreviewMode} control={<Checkbox />} label={option} />
+          : q
+      )
+    );
+  };
+
+  const handleRemoveOption = (questionId, optionIndex) => {
+    setQuestions(
+      questions.map((q) =>
+        q.id === questionId
+          ? {
+              ...q,
+              options: q.options.filter((_, i) => i !== optionIndex),
+            }
+          : q
+      )
+    );
+  };
+
+  const handleRemoveQuestion = (id) => {
+    setQuestions(questions.filter((question) => question.id !== id));
+  };
+
+  const handleQuestionUpdate = (questionId, field, value) => {
+    setQuestions(
+      questions.map((q) =>
+        q.id === questionId
+          ? {
+              ...q,
+              [field]: value,
+            }
+          : q
+      )
+    );
+  };
+
+  const renderDynamicInput = (question) => {
+    switch (question.type) {
+      case "Checkbox":
+        return (
+          <FormControl component="fieldset">
+            <List>
+              {question.options.length > 0 ? (
+                question.options.map((option, index) => (
+                  <ListItem
+                    key={index}
+                    secondaryAction={
+                      !isPreviewMode && (
+                        <IconButton edge="end" onClick={() => handleRemoveOption(question.id, index)}>
+                          <Delete />
+                        </IconButton>
+                      )
+                    }
+                  >
+                    <FormControlLabel
+                      required={question.required && isPreviewMode}
+                      control={<Checkbox />}
+                      label={option}
+                    />
                   </ListItem>
-                )) : <Typography variant="body2" color="textSecondary">No options added yet.</Typography>}
-              </List>
-              {!isPreviewMode && (
-                <Box mt={2}>
-                  <TextField label="Add Option" value={question.newOption || ""} onChange={(e) => handleQuestionUpdate(question.id, "newOption", e.target.value)} variant="outlined" size="small" />
-                  <Button onClick={() => handleAddOption(question.id)} variant="contained" size="small" sx={{ ml: 1, backgroundColor: "#3A6351", mt: 4, mb: 4, '&:hover': { backgroundColor: "#2C4F3B" } }}>Add</Button>
-                </Box>
+                ))
+              ) : (
+                <Typography variant="body2" color="textSecondary">
+                  No options added yet.
+                </Typography>
               )}
-            </FormControl>
-          );
+            </List>
+            {!isPreviewMode && (
+              <Box mt={2}>
+                <TextField
+                  label="Add Option"
+                  value={question.newOption || ""}
+                  onChange={(e) => handleQuestionUpdate(question.id, "newOption", e.target.value)}
+                  variant="outlined"
+                  size="small"
+                />
+                <Button
+                  onClick={() => handleAddOption(question.id)}
+                  variant="contained"
+                  size="small"
+                  sx={{
+                    ml: 1,
+                    backgroundColor: "#3A6351",
+                    "&:hover": { backgroundColor: "#2C4F3B" },
+                  }}
+                >
+                  Add
+                </Button>
+              </Box>
+            )}
+          </FormControl>
+        );
         case "Multiple choice":
           return (
             <FormControl component="fieldset">
@@ -192,7 +273,10 @@ import {
         case "Drop down":
           return (
             <FormControl fullWidth>
-              <InputLabel>{`Select an Option${question.required && isPreviewMode ? ' *' : ''}`}</InputLabel>
+              <InputLabel>
+  {`Select an Option${question.required && isPreviewMode ? ' *' : ''}`}
+</InputLabel>
+
               <Select required={question.required && isPreviewMode}>
                 {question.options.length > 0 ? question.options.map((option, index) => (
                   <MenuItem key={index} value={option}>{option}{!isPreviewMode && (<IconButton edge="end" size="small" onClick={() => handleRemoveOption(question.id, index)}><Delete /></IconButton>)}</MenuItem>
@@ -214,11 +298,11 @@ import {
           return null;
       }
     };
-  
-    return (
-      <>
-        <Navbar />
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: "hidden" }}>
+
+  return (
+    <>
+      <Navbar />
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: "hidden" }}>
           <Box p={4} sx={{ backgroundColor: "#C1CFA1", width: '100%', mb: 4 }}>
             <Stack px={4} direction="row" justifyContent="space-between" alignItems="center">
               <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -318,8 +402,7 @@ import {
             onClose={() => setShowSuccessPopup(false)}
           />
         )}
-        <Footer />
-      </>
-    );
-  }
-  
+      <Footer />
+    </>
+  );
+}

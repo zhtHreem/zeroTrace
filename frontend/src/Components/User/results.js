@@ -156,7 +156,7 @@ const ResultsPage = () => {
               </Paper>
             ))
           ) : (
-            <Typography>Responses are still decrypted.</Typography>
+            <Typography>Responses are still locked and cannot be decrypted at this time.</Typography>
           )
         ) : (
           <Typography>No responses found.</Typography>

@@ -20,6 +20,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams } from 'react-router-dom';
 import Recaptcha from '../Recapcha/recapcha';
+
 const FormResponsePreview = () => {
   const [formData, setFormData] = useState(null);
   const [allResponses, setAllResponses] = useState({});
@@ -29,17 +30,18 @@ const FormResponsePreview = () => {
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle'); // idle, submitted, decrypted
   const [formStatus, setFormStatus] = useState('loading'); // loading, active, closed, draft
-
+  const [timeRemaining, setTimeRemaining] = useState(null); // Countdown for decryption
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
   const userId = JSON.parse(localStorage.getItem('user'));
-
-  if (!userId) {
-    alert('You need to log in first!');
-    window.location.href = '/login';
-  }
-
   const { id } = useParams();
   const formId = id;
+
+  useEffect(() => {
+    if (!userId) {
+      alert('You need to log in first!');
+      window.location.href = '/login';
+    }
+  }, [userId]);
 
   const clearForm = () => {
     setAllResponses({});
@@ -69,6 +71,10 @@ const FormResponsePreview = () => {
         }
 
         setFormData(data);
+        if (data.encryptionEndTime) {
+          const remainingTime = new Date(data.encryptionEndTime) - new Date();
+          setTimeRemaining(remainingTime > 0 ? remainingTime : 0);
+        }
       } catch (error) {
         console.error('Error fetching form:', error);
         toast.error('Error loading form data');
@@ -102,6 +108,15 @@ const FormResponsePreview = () => {
     }
   }, [responseId]);
 
+  useEffect(() => {
+    if (timeRemaining > 0) {
+      const timer = setTimeout(() => {
+        setTimeRemaining((prev) => prev - 1000);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [timeRemaining]);
+
   const handleResponseChange = (questionId, value) => {
     setAllResponses((prev) => ({ ...prev, [questionId]: value }));
   };
@@ -112,7 +127,7 @@ const FormResponsePreview = () => {
 
   const handleSubmit = async () => {
     try {
-      if (formData.user === userId) {
+      if (formData?.user === userId) {
         alert('You cannot fill your own form!');
         return;
       }
@@ -122,17 +137,11 @@ const FormResponsePreview = () => {
         return;
       }
 
-
-      // Check if captcha is verified
       if (!isCaptchaVerified) {
         toast.error('Please complete the reCAPTCHA verification');
         return;
       }
 
-      if(formData.user===userId){
-          alert('You cannot fill your own form!');
-        }
-      else{
       const newErrors = {};
       const requiredQuestions = formData.questions.filter((q) => q.required);
       const unansweredRequired = requiredQuestions.filter((q) => !allResponses[q._id]);
@@ -175,9 +184,7 @@ const FormResponsePreview = () => {
       clearForm();
     } catch (error) {
       console.error('Error submitting response:', error);
-      if (!error.message.includes('already submitted')) {
-        toast.error('Failed to submit response. Please try again later.');
-      }
+      toast.error('Failed to submit response. Please try again later.');
     }
   };
 
@@ -271,46 +278,56 @@ const FormResponsePreview = () => {
     <>
       <Navbar />
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', px: 4 }}>
-        <Paper elevation={3} sx={{ width: '100%', mb: 4, p: 4, backgroundColor: '#C1CFA1' }}>
-          <Typography variant="h4" gutterBottom>{formData?.title}</Typography>
-          <Typography variant="body1">{formData?.description}</Typography>
-          {formStatus === 'draft' && (
-            <Typography variant="body2" color="error">
-              This form is in draft mode and cannot accept responses.
+        {formData && (
+          <Paper elevation={3} sx={{ width: '100%', mb: 4, p: 4, backgroundColor: '#C1CFA1' }}>
+            <Typography variant="h4" gutterBottom>
+              {formData.title}
             </Typography>
-          )}
-          {formStatus === 'closed' && (
-            <Typography variant="body2" color="error">
-              This form is closed and cannot accept responses.
-            </Typography>
-          )}
-        </Paper>
+            <Typography variant="body1">{formData.description}</Typography>
+            {formStatus === 'draft' && (
+              <Typography variant="body2" color="error">
+                This form is in draft mode and cannot accept responses.
+              </Typography>
+            )}
+            {formStatus === 'closed' && (
+              <Typography variant="body2" color="error">
+                This form is closed and cannot accept responses.
+              </Typography>
+            )}
+          </Paper>
+        )}
         <form id="responseForm">
           <Stack spacing={4} sx={{ width: '100%', maxWidth: '800px' }}>
-            {formStatus === 'active' && formData?.questions.map((question, index) => (
-              <Paper key={`${question._id}-${index}`} elevation={3} sx={{ p: 4 }}>
-                <Typography variant="h6" gutterBottom>
-                  {index + 1}. {question.title} {question.required && <span style={{ color: 'red' }}>*</span>}
-                </Typography>
-                {renderQuestion(question, index)}
-              </Paper>
-            ))}
+            {formStatus === 'active' &&
+              formData?.questions.map((question, index) => (
+                <Paper key={`${question._id}-${index}`} elevation={3} sx={{ p: 4 }}>
+                  <Typography variant="h6" gutterBottom>
+                    {index + 1}. {question.title} {question.required && <span style={{ color: 'red' }}>*</span>}
+                  </Typography>
+                  {renderQuestion(question, index)}
+                </Paper>
+              ))}
           </Stack>
         </form>
 
         <Box sx={{ my: 2, display: 'flex', justifyContent: 'center' }}>
           <Recaptcha onChange={handleCaptchaChange} />
         </Box>
-        
-        <Button 
-          variant="contained" 
-          size="large" 
-          onClick={handleSubmit} 
+
+        <Button
+          variant="contained"
+          size="large"
+          onClick={handleSubmit}
           sx={{ backgroundColor: '#3A6351', mt: 4, '&:hover': { backgroundColor: '#2C4F3B' } }}
           disabled={formStatus !== 'active'}
         >
           Submit Response
         </Button>
+        {timeRemaining > 0 && (
+          <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+            Time Remaining: {new Date(timeRemaining).toISOString().substr(11, 8)}
+          </Typography>
+        )}
         {unlockAt && (
           <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
             Decryption will be available at: {new Date(unlockAt).toLocaleString()}

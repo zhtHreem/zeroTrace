@@ -12,10 +12,9 @@ With features like verifiable response uniqueness, bot prevention, and time-lock
   Participants can only submit their response once, ensuring data integrity without storing personal or identifiable information using Zero-Knowledge Proofs (ZKPs).  
 
 - **Proof of Human**:  
- (provide).  
-
+ The application incorporates Google reCAPTCHA for human verification when submitting form responses. This feature ensures that only genuine users can submit forms, enhancing security and preventing automated bots from submitting false data.
 - **Time-Locked Survey Responses**:  
- (provide) 
+ The ones who make form allocate an encryption time. Once the form is activated from their profille page by clicking allocate, the encryption timer starts and users can then submit their responses till the timer ends. Responses are all decrypted till the timer ends.
 
 - **Complete Anonymity**:  
   Ensures no identifiable data is stored or accessible at any stage, maintaining participant confidentiality.  
