@@ -78,8 +78,8 @@ With features like verifiable response uniqueness, bot prevention, and time-lock
    ```
 3.Create a .env file in the backend folder and add the following environment variables:
    ```bash
-     JWT_TOKEN=<your_secret_jwt_token>
      MONGO_URI =<your_mongo_database_url>
+     ENCRYPTION_KEY=<your_encryption_key>  
    ```
 4.Install backend dependencies:
    ```bash
