@@ -72,15 +72,32 @@ With features like verifiable response uniqueness, bot prevention, and time-lock
    ```bash
    git clone https://github.com/zhtHreem/zeroTrace.git
    cd ZeroTrace
-2.To run **Backend** 
+2.Navigate to **Backend** directory: 
    ```bash
      cd backend
-     nodemon server.js
    ```
-3.To run **Frontend** open new terminal
+3.Create a .env file in the backend folder and add the following environment variables:
+   ```bash
+     JWT_TOKEN=<your_secret_jwt_token>
+     MONGO_URI =<your_mongo_database_url>
+   ```
+4.Install backend dependencies:
+   ```bash
+     npm install
+   ```
+4.Start the **backend** server:
+   ```bash
+     nodemon server.js
+
+   ```
+
+5.To run **Frontend** open new terminal
    ```bash
      cd frontend
+     npm install
      npm start
    ```
+
+   
 
    
