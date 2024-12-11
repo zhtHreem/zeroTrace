@@ -7,8 +7,7 @@ const connectDB = async () => {
   try {
     // Use environment variable or fallback to default URI
     const mongoURI =
-      process.env.MONGO_URI ||
-      'mongodb+srv://admin:123@eventify.dkeujvr.mongodb.net/ZeroTrace?retryWrites=true&w=majority&appName=eventify';
+      process.env.MONGO_URI 
     
     await mongoose.connect(mongoURI, {
     });
