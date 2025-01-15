@@ -6,8 +6,7 @@ dotenv.config(); // Load environment variables from .env file
 const connectDB = async () => {
   try {
     // Use environment variable or fallback to default URI
-    const mongoURI =
-      process.env.MONGO_URI 
+    const mongoURI = process.env.MONGO_URI 
     
     await mongoose.connect(mongoURI, {
     });
