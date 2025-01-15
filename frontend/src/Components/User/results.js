@@ -26,7 +26,7 @@ const ResultsPage = () => {
   useEffect(() => {
     const fetchResponses = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/forms/${formId}/responses`);
+        const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/forms/${formId}/responses`);
         const data = await response.json();
         setResponses(data);
         setError(null);

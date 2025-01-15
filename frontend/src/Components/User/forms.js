@@ -12,7 +12,7 @@ const UserForms = ({ userId }) => {
     const fetchForms = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/api/forms/user/${userId}`);
+        const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/forms/user/${userId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch forms');
         }
@@ -36,7 +36,7 @@ const UserForms = ({ userId }) => {
 
   const handleActivate = async (formId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/forms/activate/${formId}`, {
+      const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/forms/activate/${formId}`, {
         method: 'POST',
       });
 
@@ -97,35 +97,19 @@ const UserForms = ({ userId }) => {
                 Activation Ends: {new Date(form.encryptionEndTime).toLocaleString()}
               </Typography>
             )}
-            <Box sx={{ display: 'flex', gap: 2, mt: 2, alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', gap:{xs:0.5,md: 2}, mt: 2, alignItems: 'center' }}>
               <Chip
                 label={form.status === 'active' ? 'Active' : form.status === 'closed' ? 'Closed' : 'Draft'}
                 color={form.status === 'active' ? 'success' : 'default'}
                 sx={{ fontWeight: 'bold' }}
               />
-              <Button
-                variant="contained"
-                onClick={() => navigate(`/form/${form._id}`)}
-                sx={{ backgroundColor: '#3A6351', '&:hover': { backgroundColor: '#2C4F3B' } }}
-              >
+              <Button  variant="contained"  onClick={() => navigate(`/form/${form._id}`)} sx={{ backgroundColor: '#3A6351', '&:hover': { backgroundColor: '#2C4F3B' } }}  >
                 View
               </Button>
-              <Button
-                variant="outlined"
-                onClick={() => navigate(`/results/${form._id}`)}
-                sx={{ borderColor: '#C96868', color: '#C96868', '&:hover': { backgroundColor: '#F8EAEA' } }}
-              >
+              <Button variant="outlined"  onClick={() => navigate(`/results/${form._id}`)}  sx={{ borderColor: '#C96868', color: '#C96868', '&:hover': { backgroundColor: '#F8EAEA' } }}  >
                 Results
               </Button>
-              <Button
-                variant="contained"
-                disabled={form.status !== 'draft'} // Enable only if the form is in draft status
-                onClick={() => handleActivate(form._id)}
-                sx={{
-                  backgroundColor: form.status === 'draft' ? '#FFD700' : '#B0BEC5',
-                  '&:hover': { backgroundColor: form.status === 'draft' ? '#FFCC00' : '#B0BEC5' },
-                }}
-              >
+              <Button  variant="contained"  disabled={form.status !== 'draft'}    onClick={() => handleActivate(form._id)} sx={{  backgroundColor: form.status === 'draft' ? '#FFD700' : '#B0BEC5', '&:hover': { backgroundColor: form.status === 'draft' ? '#FFCC00' : '#B0BEC5' },   }}  >
                 Activate
               </Button>
             </Box>

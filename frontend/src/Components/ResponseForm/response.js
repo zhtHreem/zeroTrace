@@ -1,20 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Button,
-  Stack,
-  FormControl,
-  Select,
-  MenuItem,
-  FormHelperText,
-  TextField,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  Checkbox,
-} from '@mui/material';
+import { Box, Paper, Typography, Button, Stack, FormControl, Select, MenuItem, FormHelperText, TextField, Radio, RadioGroup, FormControlLabel, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'; 
 import { Navbar, Footer } from '../HomePage/navbar';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -32,17 +17,14 @@ const FormResponsePreview = () => {
   const [formStatus, setFormStatus] = useState('loading'); // loading, active, closed, draft
   const [timeRemaining, setTimeRemaining] = useState(null); // Countdown for decryption
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
-  const userId = JSON.parse(localStorage.getItem('user'));
+  const userId = JSON.parse(localStorage.getItem('uid'));
+  const [openDialog, setOpenDialog] = useState(false); // State to manage dialog visibility
+const [dialogMessage, setDialogMessage] = useState(""); // Message to display in the dialog
+
   const { id } = useParams();
   const formId = id;
 
-  useEffect(() => {
-    if (!userId) {
-      alert('You need to log in first!');
-      window.location.href = '/login';
-    }
-  }, [userId]);
-
+  
   const clearForm = () => {
     setAllResponses({});
     setErrors({});
@@ -59,7 +41,7 @@ const FormResponsePreview = () => {
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/forms/${formId}`);
+        const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/forms/${formId}`);
         const data = await response.json();
 
         if (data.status === 'draft') {
@@ -89,7 +71,7 @@ const FormResponsePreview = () => {
       setStatus('submitted');
       const interval = setInterval(async () => {
         try {
-          const res = await fetch(`http://localhost:5000/api/responses/${responseId}`);
+          const res = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/responses/${responseId}`);
           if (res.ok) {
             const data = await res.json();
             setDecryptedResponse(data.decryptedAnswers);
@@ -127,8 +109,16 @@ const FormResponsePreview = () => {
 
   const handleSubmit = async () => {
     try {
+
+      if (!userId) { 
+        setDialogMessage('Please log in to submit the form.'); 
+        setOpenDialog(true); 
+        return; 
+      } 
       if (formData?.user === userId) {
-        alert('You cannot fill your own form!');
+        
+        setDialogMessage('You cannot fill your own form!'); 
+        setOpenDialog(true);
         return;
       }
 
@@ -153,7 +143,7 @@ const FormResponsePreview = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/responses', {
+      const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/responses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ formId, responses: allResponses, user: userId }),
@@ -349,6 +339,16 @@ const FormResponsePreview = () => {
         )}
       </Box>
       <ToastContainer position="top-right" autoClose={5000} />
+       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}> 
+        <DialogTitle>Login Required</DialogTitle> 
+        <DialogContent> 
+          <Typography variant="body1">{dialogMessage}</Typography> 
+        </DialogContent> 
+        <DialogActions> 
+          <Button onClick={() => setOpenDialog(false)} color="primary">Close</Button> 
+          <Button onClick={() => { window.location.href = '/'; }} color="primary">Login</Button> 
+        </DialogActions> 
+      </Dialog> 
       <Footer />
     </>
   );

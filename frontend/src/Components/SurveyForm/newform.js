@@ -1,29 +1,8 @@
-import {
-  Box,
-  TextField,
-  Input,
-  Stack,
-  Typography,
-  Paper,
-  FormControl,
-  Select,
-  InputLabel,
-  MenuItem,
-  Grid,
-  Checkbox,
-  FormControlLabel,
-  Button,
-  RadioGroup,
-  Radio,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  Tooltip,
-} from "@mui/material";
+import React, { useState } from "react";
+import { Box, TextField, Input, Stack, Typography, Paper, FormControl, Select, InputLabel, MenuItem, Grid, Checkbox, FormControlLabel, Button, RadioGroup, Radio, IconButton, List, ListItem, ListItemText, Tooltip } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { Delete, DragIndicator, FileCopy, Preview, Edit, Add } from "@mui/icons-material";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
-import React, { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Navbar, Footer } from "../HomePage/navbar";
 import FormSuccessPopup from "./popup";
@@ -37,22 +16,26 @@ export default function NewForm() {
   const [decryptionUnit, setDecryptionUnit] = useState("hours");
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [newFormId, setNewFormId] = useState(null);
-  const userId = JSON.parse(localStorage.getItem("user"));
+  const [openDialog, setOpenDialog] = useState(false); 
+  const [dialogMessage, setDialogMessage] = useState(""); 
+
   const [category, setCategory] = useState("");
 
-  if (!userId) {
-    alert("You need to log in first!");
-    window.location.href = "/login";
-  }
-
+  
   const handleSubmit = async () => {
+     const userId = JSON.parse(localStorage.getItem("user"));
+      if (!userId) {
+      setDialogMessage('Please log in to submit the form.');
+      setOpenDialog(true); // Open dialog if the user is not logged in
+      return;
+    }
     try {
       if (!validateForm()) {
         return;
       }
 
       const decryptionTimeInSeconds = calculateTotalSeconds(decryptionTime, decryptionUnit);
-      const response = await fetch("http://localhost:5000/api/forms", {
+      const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/forms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -106,6 +89,7 @@ export default function NewForm() {
     return true;
   };
 
+
   const calculateTotalSeconds = (time, unit) => {
     switch (unit) {
       case "seconds":
@@ -142,38 +126,19 @@ export default function NewForm() {
   };
 
   const handleDuplicate = (question) => {
-    const duplicatedQuestion = {
-      ...question,
-      id: Date.now(),
-      title: `${question.title} (Copy)`,
-    };
+   const duplicatedQuestion = { ...question, id: Date.now(), title: `${question.title} (Copy)` };
     setQuestions([...questions, duplicatedQuestion]);
   };
 
   const handleAddOption = (questionId) => {
     setQuestions((prevQuestions) =>
-      prevQuestions.map((q) =>
-        q.id === questionId && q.newOption.trim() !== ""
-          ? {
-              ...q,
-              options: [...q.options, q.newOption],
-              newOption: "",
-            }
-          : q
-      )
+    prevQuestions.map(q => q.id === questionId && q.newOption.trim() !== "" ? { ...q, options: [...q.options, q.newOption], newOption: "" } : q)
     );
   };
 
   const handleRemoveOption = (questionId, optionIndex) => {
     setQuestions(
-      questions.map((q) =>
-        q.id === questionId
-          ? {
-              ...q,
-              options: q.options.filter((_, i) => i !== optionIndex),
-            }
-          : q
-      )
+    questions.map(q => q.id === questionId ? { ...q, options: q.options.filter((_, i) => i !== optionIndex) } : q)
     );
   };
 
@@ -183,14 +148,7 @@ export default function NewForm() {
 
   const handleQuestionUpdate = (questionId, field, value) => {
     setQuestions(
-      questions.map((q) =>
-        q.id === questionId
-          ? {
-              ...q,
-              [field]: value,
-            }
-          : q
-      )
+     questions.map(q => q.id === questionId ? { ...q, [field]: value } : q)
     );
   };
 
@@ -202,21 +160,9 @@ export default function NewForm() {
             <List>
               {question.options.length > 0 ? (
                 question.options.map((option, index) => (
-                  <ListItem
-                    key={index}
-                    secondaryAction={
-                      !isPreviewMode && (
-                        <IconButton edge="end" onClick={() => handleRemoveOption(question.id, index)}>
-                          <Delete />
-                        </IconButton>
-                      )
-                    }
-                  >
-                    <FormControlLabel
-                      required={question.required && isPreviewMode}
-                      control={<Checkbox />}
-                      label={option}
-                    />
+                 <ListItem key={index} secondaryAction={!isPreviewMode && <IconButton edge="end" onClick={() => handleRemoveOption(question.id, index)}><Delete /></IconButton>}>
+                  <FormControlLabel required={question.required && isPreviewMode} control={<Checkbox />} label={option} />
+
                   </ListItem>
                 ))
               ) : (
@@ -227,25 +173,9 @@ export default function NewForm() {
             </List>
             {!isPreviewMode && (
               <Box mt={2}>
-                <TextField
-                  label="Add Option"
-                  value={question.newOption || ""}
-                  onChange={(e) => handleQuestionUpdate(question.id, "newOption", e.target.value)}
-                  variant="outlined"
-                  size="small"
-                />
-                <Button
-                  onClick={() => handleAddOption(question.id)}
-                  variant="contained"
-                  size="small"
-                  sx={{
-                    ml: 1,
-                    backgroundColor: "#3A6351",
-                    "&:hover": { backgroundColor: "#2C4F3B" },
-                  }}
-                >
-                  Add
-                </Button>
+                <TextField label="Add Option" value={question.newOption || ""} onChange={(e) => handleQuestionUpdate(question.id, "newOption", e.target.value)} variant="outlined" size="small" />
+                <Button onClick={() => handleAddOption(question.id)} variant="contained" size="small" sx={{ ml: 1, backgroundColor: "#3A6351", "&:hover": { backgroundColor: "#2C4F3B" } }}>Add</Button>
+
               </Box>
             )}
           </FormControl>
@@ -401,7 +331,17 @@ export default function NewForm() {
             formId={newFormId}
             onClose={() => setShowSuccessPopup(false)}
           />
-        )}
+
+        )}<Dialog open={openDialog} onClose={() => setOpenDialog(false)}> 
+                <DialogTitle>Login Required</DialogTitle> 
+                <DialogContent> 
+                  <Typography variant="body1">{dialogMessage}</Typography> 
+                </DialogContent> 
+                <DialogActions> 
+                  <Button onClick={() => setOpenDialog(false)} color="primary">Close</Button> 
+                  <Button onClick={() => { window.location.href = '/'; }} color="primary">Login</Button> 
+                </DialogActions> 
+              </Dialog> 
       <Footer />
     </>
   );
