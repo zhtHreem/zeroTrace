@@ -102,3 +102,5 @@ app.use((err, req, res, next) => {
 
 // Start the server
 app.listen(port, () => console.log(`Server running on port ${port}`));
+// Export the app for Vercel
+export default app;
