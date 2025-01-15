@@ -18,8 +18,33 @@ dotenv.config(); // Load environment variables
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    process.env.REACT_APP_API_URL,  // Development URL
+  ],
+  methods: ["POST", "GET", "PUT", "DELETE"],
+  credentials: true
+}));
+
+
+
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp'); // Optional
+  next();
+});
+
+// Handle preflight requests
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin',process.env.REACT_APP_API_URL);  // Change '*' to the allowed origins
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.status(200).end();
+});
+
+
 app.use(express.json());
 app.use(bodyParser.json());
 
