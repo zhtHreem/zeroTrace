@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
-
+import About from './Components/HomePage/about';
 import './index.css';
 import ResponseForm from './Components/ResponseForm/response';
 import App from './App';
@@ -14,6 +14,7 @@ import UserForms from './Components/User/forms';
 import UserProfile from './Components/User/profile';
 import Survey from './Components/Surveys/survey';
 import ResultsPage from './Components/User/results'; // Import ResultsPage
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const router = createBrowserRouter([
   {
@@ -34,7 +35,10 @@ const router = createBrowserRouter([
   },
   {
     path: "/",
-    element: <Header />,
+    element: <App />,
+  },{
+    path:"/about",
+    element:<About/>
   },
   {
     path: "/user/form",
@@ -56,5 +60,8 @@ const router = createBrowserRouter([
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
+          <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
+
   <RouterProvider router={router} />
+  </GoogleOAuthProvider>
 );
