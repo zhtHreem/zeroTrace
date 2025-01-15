@@ -1,29 +1,43 @@
-import logo from './logo.svg';
-import './App.css';
-import LoginButton from './Components/Login/login';
-import {useEffect} from 'react';
-import { gapi } from 'gapi-script';
 
-
-const clientId = "723962808269-mqthfe2ndj39j2hh4bvgm4rc2d144r9n.apps.googleusercontent.com"
-
+import React, { useEffect } from 'react';
+import { lazy, Suspense }  from 'react';
+import AboutPage from './Components/HomePage/about';
+import Header from './Components/HomePage/header';
+import Box from '@mui/material/Box';
+import { useLocation } from 'react-router-dom';
+const Navbar = lazy(() => import('./Components/HomePage/navbar').then(module => ({ default: module.Navbar })));
+const Footer = lazy(() => import('./Components/HomePage/navbar').then(module => ({ default: module.Footer })));
 function App() {
+  const location = useLocation();
 
-  useEffect (() => {
-    function start(){
-      gapi.client.init({
-        clientId : clientId,
-        scope: ""
-      })
-    };
-
-    gapi.load('client:auth2', start)
-  });
-
+  
+  useEffect(() => {
+    // Check if we should scroll to about section
+    if (location.state?.scrollToAbout || location.hash === '#about') {
+      const aboutSection = document.getElementById('about-section');
+      if (aboutSection) {
+        setTimeout(() => {
+          aboutSection.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }, 100); // Small delay to ensure component is mounted
+      }
+    }
+  }, [location]);
   return (
+
     <div className="App">
-      <LoginButton/>
+         <Suspense fallback={<Box sx={{ height: '64px' }} />}>
+        <Navbar />
+      </Suspense>
+       <Header/>
+       <AboutPage/>
+        <Suspense fallback={<Box sx={{ height: '64px' }} />}>
+        <Footer />
+      </Suspense>
     </div>
+   
   );
 }
 
