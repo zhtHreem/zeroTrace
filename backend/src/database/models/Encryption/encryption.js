@@ -40,11 +40,10 @@ export function encryptResponse(response) {
  */
 export function decryptResponse(encrypted, iv) {
   try {
-    console.log('Starting decryption...');
+
     const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, Buffer.from(iv, 'hex'));
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
-    console.log('Decryption completed.');
     return decrypted;
   } catch (error) {
     console.error('Error during decryption:', error.message);
@@ -58,13 +57,11 @@ export function decryptResponse(encrypted, iv) {
  */
 export function validateEncryptionSetup() {
   try {
-    console.log('Validating encryption setup...');
     const testString = 'test';
     const { encryptedData, iv } = encryptResponse(testString);
     const decryptedString = decryptResponse(encryptedData, iv);
 
     if (decryptedString === testString) {
-      console.log('Encryption setup is valid.');
       return true;
     } else {
       throw new Error('Decrypted value does not match original.');

@@ -17,7 +17,7 @@ const UserProfile = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/user/${search}`);
+        const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/user/${search}`);
         const data = await response.json();
         setUser(data); // Update forms with fetched data
      //   console.log(data); 
