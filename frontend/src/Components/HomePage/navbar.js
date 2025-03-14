@@ -104,18 +104,15 @@ const Navbar = () => {
                 <Menu sx={{ mt: '45px' }} anchorEl={anchorElUser} open={Boolean(anchorElUser)} onClose={handleCloseUserMenu}>
                   {settings.map((setting) => <MenuItem key={setting.name} onClick={setting.name === 'Logout' ? handleLogout : handleCloseUserMenu} component={setting.name !== 'Logout' ? Link : undefined} to={setting.name !== 'Logout' ? setting.path : undefined}><Typography textAlign="center">{setting.name}</Typography></MenuItem>)}
                 </Menu>
-<Button onClick={handleLogout} sx={{ ml: 2 }} color="secondary">
+           <Button onClick={handleLogout} sx={{ ml: 2,  color:"#234A1F",  backgroundColor: "#CFE8B3",   '&:hover': { backgroundColor: "#fff", color: "#18230F" }  }} color="secondary">
             Logout
           </Button>              </>
             ) : (
-<Button 
-          onClick={() => login()} 
-          color="primary"
-          variant="contained"
-          sx={{ ml: 2 }}
-        >
+        <Button   onClick={() => login()}     variant="contained"
+          sx={{ ml: 2 ,   backgroundColor:"#18230F", color: "#fff",   '&:hover': { backgroundColor: "#234A1F", color: "#CFE8B3" } }}   >
           Login with Google
         </Button>
+
            )}
           </Box>
         </Toolbar>

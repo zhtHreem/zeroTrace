@@ -64,20 +64,21 @@ export default function Header() {
     <>
     
 
-      <Box p={{ xs: 1, sm: 2, md: 6 }}>
-        <Grid container flexDirection={{ xs: "column", md: "row" }} p={{ xs: 2, sm: 3, md: 8 }} sx={{ minHeight: { xs: '90vh', md: 600 }, height: { xs: 'auto', md: 600 }, border: "2px solid #B99470", borderRadius: { xs: 5, md: 10 }, background: 'linear-gradient(135deg, #FBF9F1 10%, #FFF8E3 90%)', boxShadow: '0 8px 32px rgba(255, 182, 193, 0.2)', position: 'relative', overflow: 'hidden', '&::before': { content: '""', position: 'absolute', top: 0, left: 0, right: 0, height: '5px', background: 'linear-gradient(90deg, #FEFBD8, #DEAC80, #FEFAE0)', borderRadius: '10px 10px 0 0' }, '&::after': grassStyle("#90EE90", 2) }} >
+      <Box py={1} px={{ xs: 1, sm: 2, md:6  }}>
+        <Grid container flexDirection={{ xs: "column", md: "row" }} p={{ xs: 2, sm: 3, md: 8 }} sx={{ minHeight: { xs: '90vh', md: 600 }, height: "90vh", border: "2px solid #B99470", borderRadius: { xs: 5, md: 10 }, background: 'linear-gradient(135deg, #FBF9F1 10%, #FFF8E3 90%)', boxShadow: '0 8px 32px rgba(255, 182, 193, 0.2)', position: 'relative', overflow: 'hidden', '&::before': { content: '""', position: 'absolute', top: 0, left: 0, right: 0, height: '5px', background: 'linear-gradient(90deg, #FEFBD8, #DEAC80, #FEFAE0)', borderRadius: '10px 10px 0 0' }, '&::after': grassStyle("#90EE90", 2) }} >
 
         <Grid item xs={12} md={6} p={{ xs: 2, sm: 4, md:3,lg:4 }} sx={{ height: { xs: "100px",md:"60vh" ,lg: "520px" }, width: "100%", position: "relative", display: "flex", flexDirection: "column", justifyContent: "center", mb: { xs: 4, md: 0 }, '&::after': grassStyle({ lg: "green" }, 1) }} >
 
            <Typography variant="h2" sx={{ fontWeight: 800, color: '#EF9C66', mb: { xs: 2, lg: 4 }, fontFamily: "'Poppins', sans-serif", fontSize: { xs: '2rem', sm: '2.5rem', lg: '3.0rem' }, lineHeight: 1.2, textShadow: '2px 2px 4px rgba(255, 105, 180, 0.1)', textAlign: { xs: 'center', md: 'left' } }} >
-             Experience the craft of survey creation
+             Secure & Anonymous Survey Creation
             </Typography>
            <Typography variant="h4" sx={{ color: '#666', mb: { xs: 3,md:1, lg: 5 }, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }, lineHeight: 1.6, fontWeight: 400, textAlign: { xs: 'center', md: 'left' } }} >
-              Easily design your survey in a matter of minutes. Access your audience on all platforms. Observe results visually and in real-time
-            </Typography>
+               Leverage Zero-Knowledge Proofs (ZKPs) for privacy and data integrity.  
+              Ensure secure, bot-free, and verified responses while maintaining complete anonymity.
+             </Typography>
             <Box sx={{ display: 'flex', justifyContent: { xs: 'center', md: 'flex-start' } }}>
               <Button variant="contained" href="/createform" sx={{ backgroundColor: "#EFBC9B", color: "white", mb: { xs: 2, lg: 6 }, padding: { xs: "10px 20px", md: "12px 30px" }, fontSize: { xs: "1rem", md: "1.1rem" }, borderRadius: "50px", textTransform: "none", boxShadow: '0 4px 15px rgba(255, 105, 180, 0.3)', transition: 'all 0.3s ease', '&:hover': { backgroundColor: "#C96868", transform: 'translateY(-2px)', boxShadow: '0 6px 20px rgba(255, 105, 180, 0.4)' } }} >
-                Create a Survey <ChevronRight sx={{ ml: 1 }} />
+                Start Your Secure Survey  <ChevronRight sx={{ ml: 1 }} />
               </Button>
             </Box>
           </Grid>
