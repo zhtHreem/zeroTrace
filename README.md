@@ -79,18 +79,23 @@ With features like verifiable response uniqueness, bot prevention, and time-lock
 3.Create a .env file in the backend folder and add the following environment variables:
    ```bash
      MONGO_URI =<your_mongo_database_url>
-     ENCRYPTION_KEY=<your_encryption_key>  
+     ENCRYPTION_KEY=<your_encryption_key>
+     REACT_APP_API_URL=<your_frontend_url>
    ```
 4.Install backend dependencies:
    ```bash
      npm install
    ```
-4.Start the **backend** server:
+5.Start the **backend** server:
    ```bash
      nodemon server.js
 
    ```
-
+6.Create a .env file in the backend folder and add the following environment variables:
+   ```bash
+     REACT_APP_GOOGLE_CLIENT_ID =<your_google_client_Id>
+     REACT_APP_LOCAL_URL=<your_backend_url>
+   ```
 5.To run **Frontend** open new terminal
    ```bash
      cd frontend
