@@ -8,7 +8,7 @@ export default function Recaptcha({ onChange }) {
   return (
     <div className="recaptcha-container">
       <ReCAPTCHA
-        sitekey="6LdNDYUqAAAAAL0jrLOMSRrDE5DL7F5CAZ_zNOfT"
+        sitekey={process.env.REACT_APP_RECAPTCHA_SITE_KEY || "6LdNDYUqAAAAAL0jrLOMSRrDE5DL7F5CAZ_zNOfT"}
         onChange={onChange}
       />
     </div>
