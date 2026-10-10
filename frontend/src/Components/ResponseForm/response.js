@@ -212,7 +212,14 @@ const FormResponsePreview = () => {
           </div>
 
           {formStatus === 'draft' && <p className="zt-hint red">This survey is a draft and can’t accept responses yet.</p>}
-          {formStatus === 'closed' && <p className="zt-hint red">This survey is closed and can’t accept responses.</p>}
+          {formStatus === 'closed' && (
+            <div className="zt-panel" style={{ marginTop: 28 }}>
+              <span className="zt-tag solid">Closed</span>
+              <h2 className="zt-page-title" style={{ fontSize: 36, marginTop: 14 }}>This survey has ended.</h2>
+              <p className="zt-page-sub">See what everyone said. The results are open to all.</p>
+              <div className="zt-actions" style={{ marginTop: 22 }}><a className="zt-btn primary" href={`/results/${formId}`}>View results →</a></div>
+            </div>
+          )}
 
           {formStatus === 'active' && status === 'idle' && (
             <>
@@ -251,7 +258,7 @@ const FormResponsePreview = () => {
               )}
               {status === 'decrypted' && decryptedResponse && (
                 <>
-                  <p className="zt-page-sub">The time-lock has passed. Here’s what you submitted:</p>
+                  <p className="zt-page-sub">The time-lock has passed. Here’s what you submitted. <a href={`/results/${formId}`} style={{ textDecoration: 'underline' }}>See what everyone said →</a></p>
                   <div style={{ marginTop: 18 }}>
                     {decryptedResponse.map((item, index) => (
                       <div key={index} className="zt-answer">
