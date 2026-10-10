@@ -160,4 +160,20 @@ router.get('/forms/:formId/responses', async (req, res) => {
   }
 });
 
+// Response counts for every survey owned by a user (aggregate only)
+router.get('/forms/user/:userId/stats', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.userId)) return res.json({});
+    const forms = await Form.find({ user: req.params.userId }).select('_id');
+    const counts = await Response.aggregate([
+      { $match: { form: { $in: forms.map((f) => f._id) } } },
+      { $group: { _id: '$form', count: { $sum: 1 } } },
+    ]);
+    res.json(Object.fromEntries(counts.map((c) => [String(c._id), c.count])));
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ message: 'Error fetching stats' });
+  }
+});
+
 export default router;
