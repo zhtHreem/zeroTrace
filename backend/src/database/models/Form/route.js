@@ -6,7 +6,6 @@ const router = express.Router();
 // POST route to save a form
 router.post('/forms', async (req, res) => {
     const { category, title, description, questions, user, decryptionTime, decryptionUnit, showComments } = req.body;
-    console.log('Form data received:', req.body);
 
     try {
         // Create a new form using the data from the request
@@ -59,7 +58,6 @@ router.get('/forms/:formId', async (req, res) => {
 router.get('/forms/user/:userId', async (req, res) => {
     try {
         const forms = await Form.find({ user: req.params.userId }).sort({ createdAt: -1 });
-        console.log('for', forms);
         res.json(forms);
     } catch (error) {
         console.error('Error fetching forms:', error);
