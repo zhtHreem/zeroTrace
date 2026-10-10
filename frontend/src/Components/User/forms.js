@@ -1,123 +1,72 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, Typography, Button, Box, Chip } from '@mui/material';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
-const UserForms = ({ userId }) => {
-  const [forms, setForms] = useState([]); // Initialize forms as an empty array
-  const [loading, setLoading] = useState(true); // Track loading state
-  const [error, setError] = useState(null); // Track errors
+const TAGS = { active: ['Live', 'solid'], closed: ['Closed', ''], draft: ['Draft', 'red'] };
+
+export function timeLeft(ms) {
+  if (ms <= 0) return 'now';
+  const m = Math.floor(ms / 60000);
+  const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+  if (d) return `${d}d ${h}h`;
+  if (h) return `${h}h ${mm}m`;
+  return `${Math.max(mm, 1)}m`;
+}
+
+const SurveyList = ({ forms, counts, isOwner, onActivate }) => {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchForms = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/forms/user/${userId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch forms');
-        }
-        const data = await response.json();
-        setForms(data);
-      } catch (err) {
-        console.error('Failed to fetch forms:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (userId) {
-      fetchForms();
-    } else {
-      setError('User ID is required to fetch forms');
-      setLoading(false);
-    }
-  }, [userId]);
-
-  const handleActivate = async (formId) => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/forms/activate/${formId}`, {
-        method: 'POST',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const { encryptionEndTime, activationTime } = data.form;
-
-        alert(
-          `Survey activated successfully!\nStart Time: ${new Date(
-            activationTime
-          ).toLocaleString()}\nEnd Time: ${new Date(encryptionEndTime).toLocaleString()}`
-        );
-
-        // Update local state to reflect activation
-        setForms((prevForms) =>
-          prevForms.map((form) =>
-            form._id === formId
-              ? {
-                  ...form,
-                  status: 'active',
-                  activationTime: new Date(activationTime),
-                  encryptionEndTime: new Date(encryptionEndTime),
-                }
-              : form
-          )
-        );
-      } else {
-        const errorData = await response.json();
-        alert(`Failed to activate survey: ${errorData.message}`);
-      }
-    } catch (err) {
-      console.error('Error activating survey:', err);
-      alert('An error occurred while activating the survey.');
-    }
+  const copyLink = (id) => {
+    navigator.clipboard.writeText(`${window.location.origin}/form/${id}`);
+    toast.success('Link copied. Share it with your respondents.');
   };
 
-  if (loading) {
-    return <Typography>Loading surveys...</Typography>;
-  }
-
-  if (error) {
-    return <Typography color="error">{error}</Typography>;
-  }
-
-  if (!forms.length) {
-    return <Typography>No surveys found.</Typography>;
+  const visible = isOwner ? forms : forms.filter((f) => f.status === 'active');
+  if (!visible.length) {
+    return <div className="zt-empty">{isOwner ? 'You haven’t created a survey yet.' : 'No open surveys.'}</div>;
   }
 
   return (
-    <Box>
-      {forms.map((form) => (
-        <Card key={form._id} sx={{ mb: 2 }}>
-          <CardContent>
-            <Typography variant="h6">{form.title}</Typography>
-            <Typography variant="body2">{form.description}</Typography>
-            {form.status === 'active' && (
-              <Typography variant="body2" color="success.main">
-                Activation Ends: {new Date(form.encryptionEndTime).toLocaleString()}
-              </Typography>
-            )}
-            <Box sx={{ display: 'flex', gap:{xs:0.5,md: 2}, mt: 2, alignItems: 'center' }}>
-              <Chip
-                label={form.status === 'active' ? 'Active' : form.status === 'closed' ? 'Closed' : 'Draft'}
-                color={form.status === 'active' ? 'success' : 'default'}
-                sx={{ fontWeight: 'bold' }}
-              />
-              <Button  variant="contained"  onClick={() => navigate(`/form/${form._id}`)} sx={{ backgroundColor: '#3A6351', '&:hover': { backgroundColor: '#2C4F3B' } }}  >
-                View
-              </Button>
-              <Button variant="outlined"  onClick={() => navigate(`/results/${form._id}`)}  sx={{ borderColor: '#C96868', color: '#C96868', '&:hover': { backgroundColor: '#F8EAEA' } }}  >
-                Results
-              </Button>
-              <Button  variant="contained"  disabled={form.status !== 'draft'}    onClick={() => handleActivate(form._id)} sx={{  backgroundColor: form.status === 'draft' ? '#FFD700' : '#B0BEC5', '&:hover': { backgroundColor: form.status === 'draft' ? '#FFCC00' : '#B0BEC5' },   }}  >
-                Activate
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-      ))}
-    </Box>
+    <div className="zt-ledger" style={{ marginTop: 20 }}>
+      {visible.map((form) => {
+        const [label, cls] = TAGS[form.status] || TAGS.draft;
+        const n = counts[form._id] || 0;
+        const unlocks = form.encryptionEndTime ? new Date(form.encryptionEndTime) : null;
+        const locked = unlocks && unlocks > new Date();
+
+        let primary = null;
+        if (isOwner) {
+          if (form.status === 'draft') primary = <button className="zt-btn sm primary" onClick={() => onActivate(form._id)}>Activate</button>;
+          else if (locked) primary = <button className="zt-btn sm primary" onClick={() => copyLink(form._id)}>Copy link</button>;
+          else primary = <button className="zt-btn sm primary" onClick={() => navigate(`/results/${form._id}`)}>View results</button>;
+        } else {
+          primary = <button className="zt-btn sm primary" onClick={() => navigate(`/form/${form._id}`)}>Answer →</button>;
+        }
+
+        return (
+          <div key={form._id} className="zt-mine">
+            <div style={{ minWidth: 0 }}>
+              <div className="zt-actions" style={{ marginBottom: 8 }}>
+                <span className={`zt-tag ${cls}`}>{label}</span>
+                {isOwner && <span className="zt-mono">{n} response{n === 1 ? '' : 's'}</span>}
+                {isOwner && form.status === 'active' && unlocks && (
+                  <span className="zt-mono">· {locked ? `unlocks in ${timeLeft(unlocks - new Date())}` : 'unlocked'}</span>
+                )}
+              </div>
+              <h3 className="zt-mine-t">{form.title}</h3>
+              <p className="zt-mine-d">{form.description}</p>
+            </div>
+            <div className="zt-actions">
+              {primary}
+              {isOwner && <button className="zt-btn sm" onClick={() => navigate(`/form/${form._id}`)}>Preview</button>}
+              {isOwner && form.status !== 'draft' && !locked && <button className="zt-btn sm" onClick={() => copyLink(form._id)}>Copy link</button>}
+              {isOwner && locked && <button className="zt-btn sm" onClick={() => navigate(`/results/${form._id}`)}>Results</button>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 };
 
-export default UserForms;
+export default SurveyList;

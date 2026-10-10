@@ -1,97 +1,136 @@
-import React, { useState,useEffect} from 'react';
-import { useParams } from 'react-router-dom';
-import { Avatar, Box, Container, Typography, Button, Paper, Card, CardContent, Chip } from '@mui/material';
-import { Cake as CakeIcon, AddCircleOutline as AddIcon } from '@mui/icons-material';
-import PersonIcon from '@mui/icons-material/Person';
-import { Navbar,Footer } from '../HomePage/navbar';
-import UserForms from './forms';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import Shell from '../Landing/Chrome';
+import SurveyList, { timeLeft } from './forms';
+
+const API = process.env.REACT_APP_LOCAL_URL;
+
 const UserProfile = () => {
-  const [surveys] = useState([
-    { id: 1, title: '🌈 Happiness Check', emoji: '😊', questions: 5, responses: 142 },
-    { id: 2, title: '🐶 Puppy Love Poll', emoji: '🐾', questions: 10, responses: 87 }
-  ]);
-    const { search } = useParams();
-    const [user, setUser] = useState([]); // Initialize forms as an empty array
-  const [loading, setLoading] = useState(true); // Track loading state
-  const [error, setError] = useState(null); // Track errors
+  const { search } = useParams();
+  const me = JSON.parse(localStorage.getItem('uid') || 'null');
+  const google = JSON.parse(localStorage.getItem('user') || 'null');
+  const isOwner = me && me === search;
+
+  const [user, setUser] = useState(null);
+  const [forms, setForms] = useState([]);
+  const [counts, setCounts] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
-    const fetchUser = async () => {
+    let alive = true;
+    (async () => {
       try {
-        const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/user/${search}`);
-        const data = await response.json();
-        setUser(data); // Update forms with fetched data
-     //   console.log(data); 
-        setError(null); // Clear any previous errors
+        const [u, f, c] = await Promise.all([
+          fetch(`${API}/api/user/${search}`),
+          fetch(`${API}/api/forms/user/${search}`),
+          fetch(`${API}/api/forms/user/${search}/stats`),
+        ]);
+        if (!u.ok) throw new Error('Not found');
+        if (!alive) return;
+        setUser(await u.json());
+        setForms(f.ok ? await f.json() : []);
+        setCounts(c.ok ? await c.json() : {});
       } catch (err) {
-        console.error('Failed to fetch forms:', err);
-        setError('Failed to load forms. Please try again.'); // Set error message
+        console.error('Failed to load profile:', err);
+        if (alive) setError('We couldn’t load this profile.');
       } finally {
-        setLoading(false); // Stop the loading indicator
+        if (alive) setLoading(false);
       }
-    };
+    })();
+    return () => { alive = false; };
+  }, [search]);
 
-    fetchUser();
-  }, []); // Run only on component mount
+  const handleActivate = async (formId) => {
+    try {
+      const response = await fetch(`${API}/api/forms/activate/${formId}`, { method: 'POST' });
+      if (!response.ok) {
+        const e = await response.json();
+        toast.error(`Couldn’t activate: ${e.message}`);
+        return;
+      }
+      const { form } = await response.json();
+      toast.success(`Survey is live. Results unlock ${new Date(form.encryptionEndTime).toLocaleString()}.`);
+      setForms((prev) => prev.map((f) => (f._id === formId ? { ...f, status: 'active', activationTime: form.activationTime, encryptionEndTime: form.encryptionEndTime } : f)));
+    } catch (err) {
+      console.error('Error activating survey:', err);
+      toast.error('An error occurred while activating the survey.');
+    }
+  };
 
-  // Render loading state
-  if (loading) {
-    return <p>Loading...</p>;
-  }
-  
-  function getName(email) {
-  // Split the email string at '@' to get the username part
-  const username = email.split('@')[0];
+  const overview = useMemo(() => {
+    const now = new Date();
+    const live = forms.filter((f) => f.status === 'active');
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    const upcoming = live.map((f) => new Date(f.encryptionEndTime)).filter((d) => d > now).sort((a, b) => a - b)[0];
+    return { created: forms.length, total, live: live.length, next: upcoming ? timeLeft(upcoming - now) : '—' };
+  }, [forms, counts]);
 
-  // Split the username by letters to get individual words
-  const words = username.match(/[A-Za-z]+/g);
+  if (loading) return <Shell><div className="zt-center">Loading…</div></Shell>;
+  if (error || !user) return <Shell><div className="zt-center">{error || 'Profile not found.'}</div></Shell>;
 
-  // Get the first two words and join them with a space
-  return words ? words.slice(0, 2).join(' ') : '';
-}
-  // Render error state
-  if (error) {
-    return <p>{error}</p>;
-  }
+  const since = new Date(user.memberSince).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
-  // Render empty state
-  if (!user || user.length === 0) {
-    return <p>No forms available</p>;
-  }
   return (
-    <>
-        <Navbar/>
- 
-    <Container maxWidth="sm" sx={{ background: 'linear-gradient(135deg, #FFE5E5, #E5F4FF)', minHeight: '100vh', py: 4 }}>
-      <Paper elevation={3} sx={{ borderRadius: 4, mb: 3, p: 3, background: 'white' }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Avatar sx={{ width: 150, height: 150, mb: 2, border: '4px solid pink', background: 'linear-gradient(45deg, #C8E4B2, #3A4D39)' }}>
-            <PersonIcon sx={{ fontSize: 100, color: 'white' }} />
-          </Avatar>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#C96868', textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}>
-            {getName(user.email)} 😊
-          </Typography>
-          <Chip label="User" color="secondary" variant="outlined" sx={{ mt: 1 }} />
-        </Box>
-      </Paper>
+    <Shell>
+      <div className="zt-page">
+        <div className="zt-narrow">
+          <div className="zt-who">
+            <img className="zt-avatar big" alt="" src={(isOwner && google?.picture) || `https://api.dicebear.com/9.x/shapes/svg?seed=${user._id}`} />
+            <div>
+              <div className="zt-mono">{isOwner ? 'Your account' : 'Profile'}</div>
+              <h1 className="zt-page-title" style={{ textTransform: 'capitalize', marginTop: 8 }}>{user.name}</h1>
+              <p className="zt-hint" style={{ marginTop: 8 }}>Member since {since}</p>
+            </div>
+          </div>
 
-      <Card sx={{ borderRadius: 4, background: 'rgba(255,255,255,0.9)' }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" sx={{ color: '#C96868' }}>My Surveys</Typography>
-            <Button href="/createform" variant="contained" startIcon={<AddIcon />} sx={{ borderRadius: 3, background: 'linear-gradient(45deg, #3A4D39, #99B080)' }}>
-              New Survey
-            </Button>
-          </Box>
+          {isOwner && (
+            <div className="zt-stats">
+              <div className="zt-stat"><span className="zt-mono">Surveys created</span><b>{overview.created}</b></div>
+              <div className="zt-stat"><span className="zt-mono">Responses received</span><b>{overview.total}</b></div>
+              <div className="zt-stat"><span className="zt-mono">Live now</span><b>{overview.live}</b></div>
+              <div className="zt-stat"><span className="zt-mono">Next unlock</span><b>{overview.next}</b></div>
+            </div>
+          )}
 
-          
+          <div className="zt-row" style={{ marginTop: 56 }}>
+            <h2 className="zt-h2" style={{ fontSize: 38, margin: 0 }}>{isOwner ? 'Your surveys' : 'Open surveys'}</h2>
+            {isOwner && <Link to="/createform" className="zt-btn primary">New survey →</Link>}
+          </div>
+          <SurveyList forms={forms} counts={counts} isOwner={isOwner} onActivate={handleActivate} />
 
-           <UserForms userId={search}/>
-
-        </CardContent>
-      </Card>
-    </Container>
-           <Footer/>
-    </>
+          {isOwner && (
+            <>
+              <h2 className="zt-h2" style={{ fontSize: 38, margin: '72px 0 0' }}>Privacy</h2>
+              <p className="zt-page-sub">What ZeroTrace keeps, and what it never has.</p>
+              <div className="zt-grid-2" style={{ marginTop: 28, alignItems: 'stretch' }}>
+                <div className="zt-panel">
+                  <span className="zt-tag solid">About you</span>
+                  <dl className="zt-kv">
+                    <div><dt>Name</dt><dd>{user.name}</dd></div>
+                    <div><dt>Email</dt><dd>{google?.email || '—'}</dd></div>
+                    <div><dt>Sign-in</dt><dd>Google</dd></div>
+                    <div><dt>Surveys</dt><dd>{overview.created} created</dd></div>
+                  </dl>
+                  <p className="zt-hint">Only you can see your email. It isn’t shown on your public profile.</p>
+                </div>
+                <div className="zt-panel">
+                  <span className="zt-tag red">About your respondents</span>
+                  <dl className="zt-kv">
+                    <div><dt>Identity</dt><dd>Not stored</dd></div>
+                    <div><dt>Linked to</dt><dd>A proof, not a person</dd></div>
+                    <div><dt>Answers</dt><dd>Encrypted until unlock</dd></div>
+                    <div><dt>You see</dt><dd>Totals only</dd></div>
+                  </dl>
+                  <p className="zt-hint">Each response is stored with a cryptographic commitment instead of a user ID. The counts above are the only numbers we show you, and we never show anything about an individual.</p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </Shell>
   );
 };
 
