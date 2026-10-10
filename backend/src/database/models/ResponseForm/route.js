@@ -139,27 +139,6 @@ router.get('/responses/:id', async (req, res) => {
   }
 });
 
-// Fetch all responses for a specific form
-router.get('/forms/:formId/responses', async (req, res) => {
-  try {
-    const { formId } = req.params;
-
-    // Find all responses associated with the specified form
-    const responses = await Response.find({ form: formId });
-
-    const formattedResponses = responses.map((response) => ({
-      decrypted: response.decryptedAnswers !== null, // Check if the response is decrypted
-      answers: response.decryptedAnswers || null, // Return decrypted answers if available
-      unlockAt: response.unlockAt,
-    }));
-
-    res.status(200).json(formattedResponses);
-  } catch (error) {
-    console.error('Error fetching responses:', error);
-    res.status(500).json({ message: 'Error fetching responses' });
-  }
-});
-
 // Response counts for every survey owned by a user (aggregate only)
 router.get('/forms/user/:userId/stats', async (req, res) => {
   try {
