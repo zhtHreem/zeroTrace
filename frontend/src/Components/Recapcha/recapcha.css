@@ -1,19 +1,6 @@
 .recaptcha-container {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
-  background-color: #f5f5f5; 
-}
-
-.recaptcha-container > div {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  border-radius: 8px;
-  background: #fff; 
-}
-
-@media (max-width: 760px) {
-  .recaptcha-container {
-    padding: 10px;
-  }
+  overflow-x: auto;
 }

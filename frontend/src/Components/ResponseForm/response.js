@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, Button, Stack, FormControl, Select, MenuItem, FormHelperText, TextField, Radio, RadioGroup, FormControlLabel, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'; 
-import { Navbar, Footer } from '../HomePage/navbar';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { useParams } from 'react-router-dom';
+import Shell from '../Landing/Chrome';
 import Recaptcha from '../Recapcha/recapcha';
 
 const FormResponsePreview = () => {
@@ -14,27 +12,20 @@ const FormResponsePreview = () => {
   const [unlockAt, setUnlockAt] = useState(null);
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle'); // idle, submitted, decrypted
-  const [formStatus, setFormStatus] = useState('loading'); // loading, active, closed, draft
+  const [formStatus, setFormStatus] = useState('loading'); // loading, active, closed, draft, error
   const [timeRemaining, setTimeRemaining] = useState(null); // Countdown for decryption
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
   const userId = JSON.parse(localStorage.getItem('uid'));
-  const [openDialog, setOpenDialog] = useState(false); // State to manage dialog visibility
-const [dialogMessage, setDialogMessage] = useState(""); // Message to display in the dialog
 
   const { id } = useParams();
   const formId = id;
 
-  
   const clearForm = () => {
     setAllResponses({});
     setErrors({});
     setIsCaptchaVerified(false);
-    if (formData) {
-      const form = document.getElementById('responseForm');
-      if (form) {
-        form.reset();
-      }
-    }
+    const form = document.getElementById('responseForm');
+    if (form) form.reset();
   };
 
   // Fetch form data and status
@@ -44,13 +35,10 @@ const [dialogMessage, setDialogMessage] = useState(""); // Message to display in
         const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/forms/${formId}`);
         const data = await response.json();
 
-        if (data.status === 'draft') {
-          setFormStatus('draft');
-        } else if (data.status === 'active') {
-          setFormStatus('active');
-        } else if (data.status === 'closed') {
-          setFormStatus('closed');
-        }
+        if (data.status === 'draft') setFormStatus('draft');
+        else if (data.status === 'active') setFormStatus('active');
+        else if (data.status === 'closed') setFormStatus('closed');
+        else setFormStatus('error');
 
         setFormData(data);
         if (data.encryptionEndTime) {
@@ -92,9 +80,7 @@ const [dialogMessage, setDialogMessage] = useState(""); // Message to display in
 
   useEffect(() => {
     if (timeRemaining > 0) {
-      const timer = setTimeout(() => {
-        setTimeRemaining((prev) => prev - 1000);
-      }, 1000);
+      const timer = setTimeout(() => setTimeRemaining((prev) => prev - 1000), 1000);
       return () => clearTimeout(timer);
     }
   }, [timeRemaining]);
@@ -103,43 +89,34 @@ const [dialogMessage, setDialogMessage] = useState(""); // Message to display in
     setAllResponses((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const handleCaptchaChange = (value) => {
-    setIsCaptchaVerified(!!value);
-  };
+  const handleCaptchaChange = (value) => setIsCaptchaVerified(!!value);
 
   const handleSubmit = async () => {
     try {
-
-      if (!userId) { 
-        setDialogMessage('Please log in to submit the form.'); 
-        setOpenDialog(true); 
-        return; 
-      } 
+      if (!userId) {
+        toast.info('Please sign in (top right) to submit your response.');
+        return;
+      }
       if (formData?.user === userId) {
-        
-        setDialogMessage('You cannot fill your own form!'); 
-        setOpenDialog(true);
+        toast.info('You can’t answer your own survey.');
         return;
       }
-
       if (formStatus !== 'active') {
-        toast.error('This form is not active. Submissions are not allowed.');
+        toast.error('This survey is not active. Submissions are not allowed.');
         return;
       }
-
       if (!isCaptchaVerified) {
-        toast.error('Please complete the reCAPTCHA verification');
+        toast.error('Please complete the verification first.');
         return;
       }
 
       const newErrors = {};
       const requiredQuestions = formData.questions.filter((q) => q.required);
       const unansweredRequired = requiredQuestions.filter((q) => !allResponses[q._id]);
-
       if (unansweredRequired.length > 0) {
         unansweredRequired.forEach((q) => (newErrors[q._id] = true));
         setErrors(newErrors);
-        toast.error('Please answer all required questions before submitting');
+        toast.error('Please answer all required questions before submitting.');
         return;
       }
 
@@ -148,209 +125,148 @@ const [dialogMessage, setDialogMessage] = useState(""); // Message to display in
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ formId, responses: allResponses, user: userId }),
       });
-
       const data = await response.json();
 
       if (!response.ok) {
         switch (data.code) {
-          case 'DUPLICATE_SUBMISSION':
-            toast.warning(`You've already submitted this form`);
-            break;
-          case 'FORM_NOT_FOUND':
-            toast.error('This form no longer exists');
-            break;
-          case 'MISSING_FIELDS':
-            toast.error('Please fill in all required fields');
-            break;
-          default:
-            toast.error('An error occurred while submitting the form');
+          case 'DUPLICATE_SUBMISSION': toast.warning('You’ve already submitted this survey.'); break;
+          case 'FORM_NOT_FOUND': toast.error('This survey no longer exists.'); break;
+          case 'MISSING_FIELDS': toast.error('Please fill in all required fields.'); break;
+          default: toast.error('An error occurred while submitting.');
         }
         throw new Error(data.message);
       }
 
-      toast.success('Form submitted successfully!');
+      toast.success('Response submitted.');
       setResponseId(data.data.responseId);
       setUnlockAt(new Date(data.data.unlockAt));
       clearForm();
     } catch (error) {
       console.error('Error submitting response:', error);
-      toast.error('Failed to submit response. Please try again later.');
     }
   };
 
-  const renderQuestion = (question, index) => {
+  const renderQuestion = (question) => {
     switch (question.type) {
       case 'Short answer':
         return (
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Type your answer here"
-            onChange={(e) => handleResponseChange(question._id, e.target.value)}
-            required={question.required}
-          />
+          <input className="zt-input" placeholder="Type your answer" required={question.required}
+            onChange={(e) => handleResponseChange(question._id, e.target.value)} />
         );
       case 'Paragraph':
         return (
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            variant="outlined"
-            placeholder="Type your detailed response here"
-            onChange={(e) => handleResponseChange(question._id, e.target.value)}
-            required={question.required}
-          />
+          <textarea className="zt-textarea" rows={4} placeholder="Type your answer" required={question.required}
+            onChange={(e) => handleResponseChange(question._id, e.target.value)} />
         );
       case 'Multiple choice':
-        return (
-          <FormControl component="fieldset" fullWidth required={question.required}>
-            <RadioGroup
-              onChange={(e) => handleResponseChange(question._id, e.target.value)}
-              value={allResponses[question._id] || ''}
-            >
-              {question.options.map((option, idx) => (
-                <FormControlLabel key={idx} value={option} control={<Radio />} label={option} />
-              ))}
-            </RadioGroup>
-          </FormControl>
-        );
+        return question.options.map((option, idx) => (
+          <label key={idx} className={`zt-opt${allResponses[question._id] === option ? ' on' : ''}`}>
+            <input type="radio" name={question._id} value={option} checked={allResponses[question._id] === option}
+              onChange={(e) => handleResponseChange(question._id, e.target.value)} />
+            {option}
+          </label>
+        ));
       case 'Checkbox':
-        return (
-          <FormControl component="fieldset" fullWidth required={question.required}>
-            {question.options.map((option, idx) => (
-              <FormControlLabel
-                key={idx}
-                control={
-                  <Checkbox
-                    checked={(allResponses[question._id] || []).includes(option)}
-                    onChange={(e) => {
-                      const selected = allResponses[question._id] || [];
-                      const updated = e.target.checked
-                        ? [...selected, option]
-                        : selected.filter((item) => item !== option);
-                      handleResponseChange(question._id, updated);
-                    }}
-                  />
-                }
-                label={option}
-              />
-            ))}
-          </FormControl>
-        );
+        return question.options.map((option, idx) => {
+          const selected = allResponses[question._id] || [];
+          const checked = selected.includes(option);
+          return (
+            <label key={idx} className={`zt-opt${checked ? ' on' : ''}`}>
+              <input type="checkbox" checked={checked}
+                onChange={(e) => handleResponseChange(question._id, e.target.checked ? [...selected, option] : selected.filter((i) => i !== option))} />
+              {option}
+            </label>
+          );
+        });
       case 'Drop down':
         return (
-          <FormControl fullWidth required={question.required}>
-            <Select
-              onChange={(e) => handleResponseChange(question._id, e.target.value)}
-              value={allResponses[question._id] || ''}
-              displayEmpty
-            >
-              <MenuItem value="" disabled>
-                <em>Select an option</em>
-              </MenuItem>
-              {question.options.map((option, idx) => (
-                <MenuItem key={idx} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </Select>
-            {errors[question._id] && <FormHelperText>This field is required</FormHelperText>}
-          </FormControl>
+          <select className="zt-select" value={allResponses[question._id] || ''} required={question.required}
+            onChange={(e) => handleResponseChange(question._id, e.target.value)}>
+            <option value="" disabled>Select an option</option>
+            {question.options.map((option, idx) => <option key={idx} value={option}>{option}</option>)}
+          </select>
         );
       default:
-        console.error('Unknown question type:', question.type);
-        return <Typography>Unknown question type</Typography>;
+        return <p className="zt-hint">Unsupported question type.</p>;
     }
   };
 
+  if (formStatus === 'loading') return <Shell><div className="zt-center">Loading survey…</div></Shell>;
+  if (formStatus === 'error' || !formData) return <Shell><div className="zt-center">We couldn’t load this survey.</div></Shell>;
+
+  const statusTag = { active: 'Open', draft: 'Draft', closed: 'Closed' }[formStatus];
+  const hh = timeRemaining > 0 ? new Date(timeRemaining).toISOString().substr(11, 8) : null;
+
   return (
-    <>
-      <Navbar />
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', px: 4 }}>
-        {formData && (
-          <Paper elevation={3} sx={{ width: '100%', mb: 4, p: 4, backgroundColor: '#C1CFA1' }}>
-            <Typography variant="h4" gutterBottom>
-              {formData.title}
-            </Typography>
-            <Typography variant="body1">{formData.description}</Typography>
-            {formStatus === 'draft' && (
-              <Typography variant="body2" color="error">
-                This form is in draft mode and cannot accept responses.
-              </Typography>
-            )}
-            {formStatus === 'closed' && (
-              <Typography variant="body2" color="error">
-                This form is closed and cannot accept responses.
-              </Typography>
-            )}
-          </Paper>
-        )}
-        <form id="responseForm">
-          <Stack spacing={4} sx={{ width: '100%', maxWidth: '800px' }}>
-            {formStatus === 'active' &&
-              formData?.questions.map((question, index) => (
-                <Paper key={`${question._id}-${index}`} elevation={3} sx={{ p: 4 }}>
-                  <Typography variant="h6" gutterBottom>
-                    {index + 1}. {question.title} {question.required && <span style={{ color: 'red' }}>*</span>}
-                  </Typography>
-                  {renderQuestion(question, index)}
-                </Paper>
-              ))}
-          </Stack>
-        </form>
+    <Shell>
+      <div className="zt-page">
+        <div className="zt-narrow">
+          <div className="zt-actions" style={{ marginBottom: 6 }}>
+            <span className="zt-tag solid">{statusTag}</span>
+            {formData.category && <span className="zt-tag">{formData.category}</span>}
+          </div>
+          <h1 className="zt-page-title">{formData.title}</h1>
+          <p className="zt-page-sub">{formData.description}</p>
+          <div className="zt-note">
+            <b>Your answers are anonymous.</b> We verify you’re a real, unique person, but your identity is never attached to what you write.
+          </div>
 
-        <Box sx={{ my: 2, display: 'flex', justifyContent: 'center' }}>
-          <Recaptcha onChange={handleCaptchaChange} />
-        </Box>
+          {formStatus === 'draft' && <p className="zt-hint red">This survey is a draft and can’t accept responses yet.</p>}
+          {formStatus === 'closed' && <p className="zt-hint red">This survey is closed and can’t accept responses.</p>}
 
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleSubmit}
-          sx={{ backgroundColor: '#3A6351', mt: 4, '&:hover': { backgroundColor: '#2C4F3B' } }}
-          disabled={formStatus !== 'active'}
-        >
-          Submit Response
-        </Button>
-        {timeRemaining > 0 && (
-          <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-            Time Remaining: {new Date(timeRemaining).toISOString().substr(11, 8)}
-          </Typography>
-        )}
-        {unlockAt && (
-          <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-            Decryption will be available at: {new Date(unlockAt).toLocaleString()}
-          </Typography>
-        )}
-        {status === 'decrypted' && (
-          <Stack spacing={2} sx={{ mt: 4 }}>
-            {decryptedResponse.map((item, index) => (
-              <Paper key={index} elevation={2} sx={{ p: 2, backgroundColor: '#F8F9FA' }}>
-                <Typography variant="subtitle1" fontWeight="bold">
-                  {item.questionTitle}
-                </Typography>
-                <Typography variant="body1">
-                  {Array.isArray(item.answer) ? item.answer.join(', ') : item.answer}
-                </Typography>
-              </Paper>
-            ))}
-          </Stack>
-        )}
-      </Box>
-      <ToastContainer position="top-right" autoClose={5000} />
-       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}> 
-        <DialogTitle>Login Required</DialogTitle> 
-        <DialogContent> 
-          <Typography variant="body1">{dialogMessage}</Typography> 
-        </DialogContent> 
-        <DialogActions> 
-          <Button onClick={() => setOpenDialog(false)} color="primary">Close</Button> 
-          <Button onClick={() => { window.location.href = '/'; }} color="primary">Login</Button> 
-        </DialogActions> 
-      </Dialog> 
-      <Footer />
-    </>
+          {formStatus === 'active' && status === 'idle' && (
+            <>
+              <form id="responseForm" onSubmit={(e) => e.preventDefault()}>
+                {formData.questions.map((question, index) => (
+                  <div key={`${question._id}-${index}`} className={`zt-panel zt-ask${errors[question._id] ? ' err' : ''}`} style={{ marginTop: 18 }}>
+                    <div className="zt-qhead">
+                      <span className="zt-mono">Q{String(index + 1).padStart(2, '0')}</span>
+                      {question.required && <span className="zt-tag red">Required</span>}
+                    </div>
+                    <h3 className="zt-ask-t">{question.title}</h3>
+                    {renderQuestion(question)}
+                    {errors[question._id] && <p className="zt-hint red">This question is required.</p>}
+                  </div>
+                ))}
+              </form>
+
+              <div className="zt-panel flat" style={{ marginTop: 26 }}>
+                <label className="zt-label">Verify you’re human</label>
+                <Recaptcha onChange={handleCaptchaChange} />
+              </div>
+
+              <div className="zt-actions" style={{ marginTop: 26, justifyContent: 'space-between' }}>
+                <span className="zt-mono">{hh ? `Results unlock in ${hh}` : 'Results are time-locked'}</span>
+                <button className="zt-btn primary" onClick={handleSubmit}>Submit anonymously →</button>
+              </div>
+            </>
+          )}
+
+          {status !== 'idle' && (
+            <div className="zt-panel" style={{ marginTop: 28 }}>
+              <span className="zt-tag red">Sealed</span>
+              <h2 className="zt-page-title" style={{ fontSize: 38, marginTop: 14 }}>Thank you. Your answer is in.</h2>
+              {status === 'submitted' && unlockAt && (
+                <p className="zt-page-sub">It’s encrypted and will open on <b>{new Date(unlockAt).toLocaleString()}</b>. You can leave this page; nothing links it back to you.</p>
+              )}
+              {status === 'decrypted' && decryptedResponse && (
+                <>
+                  <p className="zt-page-sub">The time-lock has passed. Here’s what you submitted:</p>
+                  <div style={{ marginTop: 18 }}>
+                    {decryptedResponse.map((item, index) => (
+                      <div key={index} className="zt-answer">
+                        <div className="zt-mono">{item.questionTitle}</div>
+                        <p>{Array.isArray(item.answer) ? item.answer.join(', ') : item.answer}</p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </Shell>
   );
 };
 
