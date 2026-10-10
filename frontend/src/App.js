@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Shell from './Components/Landing/Chrome';
 import Hero from './Components/Landing/Hero';
 import Crowd from './Components/Landing/Crowd';
-import { Marquee, Features, LiveSurveys, FinalCTA } from './Components/Landing/Sections';
+import { Marquee, Features, LiveSurveys, OpenResults, FinalCTA } from './Components/Landing/Sections';
 
 function App() {
   const location = useLocation();
@@ -22,6 +22,7 @@ function App() {
       <Marquee />
       <Crowd />
       <Features />
+      <OpenResults />
       <LiveSurveys />
       <FinalCTA />
     </Shell>

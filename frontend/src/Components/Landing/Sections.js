@@ -101,6 +101,49 @@ export function LiveSurveys() {
   );
 }
 
+export function OpenResults() {
+  const [items, setItems] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`${process.env.REACT_APP_LOCAL_URL}/api/results/featured`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => alive && setItems(d))
+      .catch(() => alive && setItems([]));
+    return () => { alive = false; };
+  }, []);
+
+  if (!items || items.length === 0) return null;
+
+  return (
+    <section className="zt-sec" id="results" style={{ paddingTop: 0 }}>
+      <div className="zt-wrap">
+        <motion.div className="zt-row" {...reveal}>
+          <div>
+            <div className="zt-mono">Open results</div>
+            <h2 className="zt-h2">What people <em>said</em></h2>
+            <p className="zt-lead">Every closed survey publishes its results to everyone: the pattern, never the people.</p>
+          </div>
+          <Link to="/surveys" className="zt-btn">All surveys →</Link>
+        </motion.div>
+        <div className="zt-findings">
+          {items.map((r) => (
+            <motion.div key={r._id} {...reveal}>
+              <Link to={`/results/${r._id}`} className="zt-finding">
+                <span className="zt-tag">{r.category}</span>
+                <div className="zt-finding-n">{r.topPct}%</div>
+                <p className="zt-finding-q">{r.question}</p>
+                <p className="zt-finding-a">answered <b>“{r.topLabel}”</b></p>
+                <span className="zt-mono">{r.title} · {r.totalResponses} responses →</span>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function FinalCTA() {
   return (
     <section className="zt-final">
