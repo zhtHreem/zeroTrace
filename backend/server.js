@@ -72,7 +72,6 @@ cron.schedule('* * * * *', async () => {
       const { encryptedData, iv } = response.answers;
       try {
         const decrypted = decryptResponse(encryptedData, iv); // Decrypt the encrypted response data
-        console.log('Decrypted Response:', decrypted);
 
         // Save decrypted data to the database
         response.decryptedAnswers = JSON.parse(decrypted); // Store the decrypted data
