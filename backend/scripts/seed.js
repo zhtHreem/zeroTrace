@@ -16,7 +16,6 @@ import Form from '../src/database/models/Form/schema.js';
 import User from '../src/database/models/User/schema.js';
 import { Response, SubmissionTracking } from '../src/database/models/ResponseForm/schema.js';
 import { encryptResponse } from '../src/database/models/Encryption/encryption.js';
-import ZKPSubmissionManager from '../src/database/models/ResponseForm/zkp.js';
 import { SURVEYS } from './seedContent.js';
 
 const BATCH = 'launch-v1';
@@ -83,7 +82,6 @@ async function seed() {
   if (existing && args.has('--force')) await remove();
 
   const now = Date.now();
-  const zkp = new ZKPSubmissionManager();
   const dry = args.has('--dry');
 
   let owner = null;
@@ -123,7 +121,9 @@ async function seed() {
         answer: answerFor(s.questions[qi], ctx),
         questionType: q.type,
       }));
-      const { commitment, nullifier } = await zkp.generateZKPCommitment(`seed-${s.key}-${i}-${crypto.randomBytes(6).toString('hex')}`, form._id.toString());
+      // same shape the API stores now: an opaque per-survey token, no user identity
+      const nullifier = crypto.randomBytes(32).toString('hex');
+      const commitment = nullifier;
       const { encryptedData, iv } = encryptResponse(JSON.stringify(formatted));
       // earlier in the window is busier, as with real surveys
       const submittedAt = new Date(activated.getTime() + Math.pow(rng(), 1.6) * (lastSubmit - activated.getTime()));
