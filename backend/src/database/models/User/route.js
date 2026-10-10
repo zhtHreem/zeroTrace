@@ -58,13 +58,18 @@ router.get('/user/:Id', async (req, res) => {
     try {
         const user = await User.findById(req.params.Id);
         if (!user) {
-            return res.status(404).json({ message: 'Form not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
-       // res.json(form);
-       res.status(200).json(user);
+        // Public profile only: never expose email, googleId or password hash here.
+        const fallback = (user.email || '').split('@')[0].match(/[A-Za-z]+/g);
+        res.status(200).json({
+            _id: user._id,
+            name: user.name || (fallback ? fallback.slice(0, 2).join(' ') : 'Anonymous'),
+            memberSince: user._id.getTimestamp(), // ObjectId encodes its creation time
+        });
     } catch (error) {
-        console.error('Error fetching form:', error);
-        res.status(500).json({ message: 'Error fetching form', error: error.message });
+        console.error('Error fetching user:', error);
+        res.status(500).json({ message: 'Error fetching user' });
     }
 });
 
