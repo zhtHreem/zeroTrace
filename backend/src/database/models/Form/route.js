@@ -32,7 +32,8 @@ router.post('/forms', async (req, res) => {
 // GET route to fetch all forms
 router.get('/forms', async (req, res) => {
     try {
-        const forms = await Form.find();
+        // Public list: drafts are private to their owner (see /forms/user/:userId)
+        const forms = await Form.find({ status: { $ne: 'draft' } }).sort({ createdAt: -1 });
         res.status(200).json(forms);
     } catch (error) {
         res.status(500).json({ error: `Error fetching titles: ${error.message}` });
