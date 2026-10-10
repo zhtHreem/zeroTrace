@@ -176,4 +176,88 @@ router.get('/forms/user/:userId/stats', async (req, res) => {
   }
 });
 
+// ───────────────────────── Public results (aggregates only) ─────────────────────────
+// Closed surveys publish what everyone said, never who said it. Rules enforced here, not in the UI:
+//  - nothing is shown until the unlock time has passed
+//  - nothing is broken down until at least MIN_PUBLIC_RESPONSES people answered
+//  - choice answers are totals/percentages; written comments only if the creator opted in
+const MIN_PUBLIC_RESPONSES = 5;
+const CHOICE_TYPES = ['Multiple choice', 'Drop down', 'Checkbox'];
+
+const isUnlocked = (form) => !!form.encryptionEndTime && Date.now() >= new Date(form.encryptionEndTime).getTime();
+
+async function loadAnswerSets(formId) {
+  const rows = await Response.find({ form: formId });
+  const sets = [];
+  for (const r of rows) {
+    if (Array.isArray(r.decryptedAnswers)) { sets.push(r.decryptedAnswers); continue; }
+    try { sets.push(JSON.parse(decryptResponse(r.answers.encryptedData, r.answers.iv))); }
+    catch (e) { console.error('Could not decrypt response', r._id.toString()); }
+  }
+  return sets;
+}
+
+const answered = (a) => a && a.answer !== '' && a.answer != null && !(Array.isArray(a.answer) && a.answer.length === 0);
+
+function summarizeQuestions(form, sets) {
+  return form.questions.map((q, qi) => {
+    const qid = q._id.toString();
+    const given = sets.map((set) => set.find((a) => a.question === qid) || set[qi]).filter(answered);
+    const base = { title: q.title, type: q.type, answered: given.length };
+    if (CHOICE_TYPES.includes(q.type)) {
+      const counts = Object.fromEntries(q.options.map((o) => [o, 0]));
+      given.forEach((a) => (Array.isArray(a.answer) ? a.answer : [a.answer]).forEach((v) => { if (v in counts) counts[v] += 1; }));
+      return { ...base, options: q.options.map((label) => ({ label, count: counts[label], pct: given.length ? Math.round((counts[label] / given.length) * 100) : 0 })) };
+    }
+    if (form.showComments) {
+      return { ...base, comments: given.map((a) => String(a.answer)).sort((x, y) => x.localeCompare(y)).slice(0, 60) };
+    }
+    return { ...base, commentsHidden: true };
+  });
+}
+
+router.get('/forms/:formId/results', async (req, res) => {
+  try {
+    const { formId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(formId)) return res.status(404).json({ message: 'Survey not found' });
+    const form = await Form.findById(formId);
+    if (!form || form.status === 'draft') return res.status(404).json({ message: 'Survey not found' });
+
+    const total = await Response.countDocuments({ form: formId });
+    const head = { title: form.title, description: form.description, category: form.category, totalResponses: total };
+
+    if (!isUnlocked(form)) return res.json({ ...head, status: 'locked', unlockAt: form.encryptionEndTime });
+    if (total < MIN_PUBLIC_RESPONSES) return res.json({ ...head, status: 'too-few', minimum: MIN_PUBLIC_RESPONSES });
+
+    const sets = await loadAnswerSets(formId);
+    res.json({ ...head, status: 'open', showComments: !!form.showComments, questions: summarizeQuestions(form, sets) });
+  } catch (error) {
+    console.error('Error building results:', error);
+    res.status(500).json({ message: 'Error building results' });
+  }
+});
+
+// Recently opened results for the homepage: one headline finding per survey
+router.get('/results/featured', async (req, res) => {
+  try {
+    const forms = await Form.find({ status: { $ne: 'draft' }, encryptionEndTime: { $lte: new Date() } }).sort({ encryptionEndTime: -1 }).limit(12);
+    const out = [];
+    for (const form of forms) {
+      if (out.length === 3) break;
+      const total = await Response.countDocuments({ form: form._id });
+      if (total < MIN_PUBLIC_RESPONSES) continue;
+      const qIndex = form.questions.findIndex((q) => q.type === 'Multiple choice');
+      if (qIndex < 0) continue;
+      const sets = await loadAnswerSets(form._id);
+      const q = summarizeQuestions(form, sets)[qIndex];
+      const top = [...q.options].sort((a, b) => b.count - a.count)[0];
+      out.push({ _id: form._id, title: form.title, category: form.category, totalResponses: total, question: q.title, topLabel: top.label, topPct: top.pct });
+    }
+    res.json(out);
+  } catch (error) {
+    console.error('Error building featured results:', error);
+    res.status(500).json({ message: 'Error building featured results' });
+  }
+});
+
 export default router;
