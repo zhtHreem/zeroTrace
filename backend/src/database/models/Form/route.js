@@ -111,47 +111,4 @@ router.post('/forms/activate/:id', async (req, res) => {
     }
 });
 
-
-// Validate form status before submission
-router.post('/forms/:formId/responses', async (req, res) => {
-    try {
-        const { formId } = req.params;
-        const { answers } = req.body;
-
-        const form = await Form.findById(formId);
-
-        if (!form) {
-            return res.status(404).json({ error: 'Form not found' });
-        }
-
-        // Check if the form is active
-        if (form.status !== 'active') {
-            return res.status(403).json({ error: 'Form is not active. Submissions are not allowed.' });
-        }
-
-        // Check if the encryption end time has passed
-        const now = new Date();
-        if (form.encryptionEndTime && now > form.encryptionEndTime) {
-            form.status = 'closed';
-            await form.save();
-            return res.status(403).json({ error: 'Form is closed. Submissions are not allowed.' });
-        }
-
-        // Process the response submission (encryption logic to be implemented elsewhere)
-        // Assuming encryption happens here
-        const encryptedResponse = encryptResponse(JSON.stringify(answers));
-        const response = new Response({
-            form: formId,
-            answers: encryptedResponse,
-            unlockAt: form.encryptionEndTime,
-        });
-
-        await response.save();
-        res.status(201).json({ message: 'Response submitted successfully', response });
-    } catch (error) {
-        console.error('Error submitting response:', error);
-        res.status(500).json({ error: 'Failed to submit response' });
-    }
-});
-
 export default router;
