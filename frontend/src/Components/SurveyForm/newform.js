@@ -3,12 +3,60 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { toast } from "react-toastify";
 import Shell from "../Landing/Chrome";
 import FormSuccessPopup from "./popup";
+import QuestionField from "../ResponseForm/QuestionField";
 import useAuth from "../Landing/useAuth";
 
 const TYPES = ["Checkbox", "Multiple choice", "Drop down", "Short answer", "Paragraph"];
 const CHOICE_TYPES = ["Checkbox", "Multiple choice", "Drop down"];
 const CATEGORIES = ["Workplace", "Education", "Technology", "Health & Wellbeing", "Community", "Consumers & Products", "Other"];
 const UNIT_SECONDS = { seconds: 1, minutes: 60, hours: 3600, days: 86400 };
+
+// What a respondent will see, using the same question renderer as the live respond page.
+function Preview({ title, description, category, questions, decryptionTime, decryptionUnit }) {
+  const [answers, setAnswers] = useState({});
+  const set = (id, v) => setAnswers((prev) => ({ ...prev, [id]: v }));
+  const unit = decryptionTime === 1 ? decryptionUnit.replace(/s$/, "") : decryptionUnit;
+
+  return (
+    <div>
+      <div className="zt-note" style={{ marginTop: 28 }}>
+        <b>This is exactly what people will see.</b> Try it out. Nothing here is saved or submitted.
+      </div>
+      <div className="zt-previewframe">
+        <div className="zt-actions" style={{ marginBottom: 6 }}>
+          <span className="zt-tag solid">Open</span>
+          {category && <span className="zt-tag">{category}</span>}
+        </div>
+        <h1 className="zt-page-title">{title || "Untitled survey"}</h1>
+        {description && <p className="zt-page-sub">{description}</p>}
+        <div className="zt-note">
+          <b>Your answers are anonymous.</b> Your browser proves you’re a registered member without saying which one, so the server can’t tell who wrote what.
+        </div>
+
+        {questions.length === 0 && <div className="zt-empty">No questions yet. Add one to see it here.</div>}
+        {questions.map((q, index) => (
+          <div key={q.id} className="zt-panel zt-ask" style={{ marginTop: 18 }}>
+            <div className="zt-qhead">
+              <span className="zt-mono">Q{String(index + 1).padStart(2, "0")}</span>
+              {q.required && <span className="zt-tag red">Required</span>}
+            </div>
+            <h3 className="zt-ask-t">{q.title || "Untitled question"}</h3>
+            <QuestionField question={{ ...q, _id: q.id }} value={answers[q.id]} onChange={(v) => set(q.id, v)} />
+          </div>
+        ))}
+
+        <div className="zt-panel flat" style={{ marginTop: 26 }}>
+          <label className="zt-label">Verify you’re human</label>
+          <div className="zt-fakecaptcha"><span /> I’m not a robot <em>reCAPTCHA appears here</em></div>
+        </div>
+        <div className="zt-actions" style={{ marginTop: 26, justifyContent: "space-between" }}>
+          <span className="zt-mono">Results unlock {decryptionTime} {unit} after you activate</span>
+          <button className="zt-btn primary" disabled>Submit anonymously →</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function NewForm() {
   const [formTitle, setFormTitle] = useState("");
@@ -147,14 +195,18 @@ export default function NewForm() {
         <div className="zt-narrow">
           <div className="zt-row">
             <div>
-              <div className="zt-mono">{isPreviewMode ? "Preview" : "New survey"}</div>
-              <h1 className="zt-page-title">{formTitle || "Untitled survey"}</h1>
+              <div className="zt-mono">{isPreviewMode ? "Respondent view" : "New survey"}</div>
+              <h1 className="zt-page-title">{isPreviewMode ? "Preview" : formTitle || "Untitled survey"}</h1>
             </div>
             <div className="zt-actions">
               <button className="zt-btn sm" onClick={() => setIsPreviewMode(!isPreviewMode)}>{isPreviewMode ? "← Back to editing" : "Preview"}</button>
             </div>
           </div>
 
+          {isPreviewMode ? (
+            <Preview title={formTitle} description={formDescription} category={category} questions={questions} decryptionTime={decryptionTime} decryptionUnit={decryptionUnit} />
+          ) : (
+            <>
           {!user && (
             <div className="zt-note" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
               <span><b>Sign in to publish.</b> You can build your survey now, but you’ll need an account to publish it.</span>
@@ -250,6 +302,8 @@ export default function NewForm() {
 
           {!isPreviewMode && (
             <button className="zt-add" onClick={handleAddQuestion}>+ Add a question</button>
+          )}
+            </>
           )}
 
           <hr className="zt-sep" />

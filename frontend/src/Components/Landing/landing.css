@@ -257,3 +257,9 @@
 .zt-finding-a { margin: 0; color: var(--ink-2); font-size: 15px; flex: 1; }
 .zt-finding .zt-mono { margin-top: 10px; }
 @media (max-width: 900px) { .zt-findings { grid-template-columns: 1fr; } }
+
+/* builder preview: the respondent's view, framed so it reads as "what they'll see" */
+.zt-previewframe { margin-top: 18px; padding: clamp(18px, 3vw, 34px); border: 1px dashed var(--ink-3); background: var(--paper); }
+.zt-fakecaptcha { display: inline-flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid var(--rule); background: #fff; font-size: 14px; color: var(--ink-2); }
+.zt-fakecaptcha span { width: 22px; height: 22px; border: 2px solid var(--ink-3); border-radius: 2px; background: #fff; display: block; }
+.zt-fakecaptcha em { font: normal 11px var(--mono); color: var(--ink-3); margin-left: 10px; }
