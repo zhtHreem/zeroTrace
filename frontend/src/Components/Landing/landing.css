@@ -264,4 +264,3 @@
 .zt-fakecaptcha span { width: 22px; height: 22px; border: 2px solid var(--ink-3); border-radius: 2px; background: #fff; display: block; }
 .zt-fakecaptcha em { font: normal 11px var(--mono); color: var(--ink-3); margin-left: 10px; }
 
-.zt-foot-note { width: 100%; text-transform: none; letter-spacing: 0.02em; font-size: 12px; }
