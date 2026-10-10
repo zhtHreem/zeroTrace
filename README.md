@@ -70,7 +70,7 @@ ZeroTrace is built so the promise is enforced by cryptography instead of policy:
 - **Public results with safety rules.** Minimum of 5 responses, totals only, written answers private unless the creator opts in
 - **Proof of humanity** with reCAPTCHA before submitting
 - **Survey builder** with drag-to-reorder questions, five question types and a faithful respondent preview
-- **A calm, editorial interface** with no tracking pixels and no dark patterns
+- **A calm, editorial interface** with no cookies, no ad trackers and no dark patterns. Visit counts are aggregate and cookie-free, and survey-answering pages are never counted
 
 ## How it works
 
@@ -213,6 +213,8 @@ cd backend && npm run dev
 # terminal 2: app on :3000
 cd frontend && npm start
 ```
+
+Visit counts use [Vercel Web Analytics](https://vercel.com/docs/analytics) and only do anything once deployed on Vercel with Analytics enabled for the project. Nothing is sent from your local machine.
 
 The first build takes a minute or two. The first time you answer a survey, your browser downloads the proof parameters, so allow a few seconds.
 
