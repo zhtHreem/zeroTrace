@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs';
 import User from './schema.js'; 
 const router = express.Router();
 
+// Never send the raw document back: it contains the password hash and Google id.
+const safeUser = (user) => ({ _id: user._id, name: user.name, email: user.email });
+
 router.post('/login', async (req, res) => {
     const { email, password, googleId, name } = req.body;
   
@@ -27,7 +30,7 @@ router.post('/login', async (req, res) => {
           await user.save();
         }
   
-        return res.status(200).json({ message: 'Google login successful', user });
+        return res.status(200).json({ message: 'Google login successful', user: safeUser(user) });
       } else {
         // Regular login
         if (!user) {
@@ -37,13 +40,13 @@ router.post('/login', async (req, res) => {
   
           user = new User({ email, password });
           await user.save();
-          return res.status(201).json({ message: 'User created and logged in successfully', user });
+          return res.status(201).json({ message: 'User created and logged in successfully', user: safeUser(user) });
         } else {
           const isMatch = await bcrypt.compare(password, user.password);
           if (!isMatch) {
             return res.status(401).json({ error: 'Invalid password' });
           }
-          return res.status(200).json({ message: 'Login successful', user });
+          return res.status(200).json({ message: 'Login successful', user: safeUser(user) });
         }
       }
     } catch (error) {
