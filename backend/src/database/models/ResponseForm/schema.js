@@ -25,6 +25,8 @@ const submissionTrackingSchema = new mongoose.Schema({
   }
 });
 
+submissionTrackingSchema.index({ formId: 1, nullifier: 1 }, { unique: true });
+
 const responseSchema = new mongoose.Schema({
   form: {
     type: mongoose.Schema.Types.ObjectId,
