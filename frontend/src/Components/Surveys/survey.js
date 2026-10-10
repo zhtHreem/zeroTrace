@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Shell from '../Landing/Chrome';
 
+const isEnded = (f) => f.encryptionEndTime && new Date(f.encryptionEndTime) <= new Date();
+
 function Survey() {
   const navigate = useNavigate();
   const [forms, setForms] = useState(null);
@@ -55,10 +57,11 @@ function Survey() {
           ) : (
             <div className="zt-ledger">
               {shown.map((f, i) => (
-                <div key={f._id} className="zt-led link" onClick={() => navigate(`/form/${f._id}`)}>
+                <div key={f._id} className="zt-led link" onClick={() => navigate(isEnded(f) ? `/results/${f._id}` : `/form/${f._id}`)}>
                   <span className="n">{String(i + 1).padStart(2, '0')}</span>
                   <h3>{f.title}</h3>
                   <p>
+                    {isEnded(f) && <span className="zt-tag solid" style={{ marginRight: 10 }}>Results open</span>}
                     {f.category && <span className="zt-tag" style={{ marginRight: 10 }}>{f.category}</span>}
                     <span className="zt-mono">{new Date(f.createdAt).toLocaleDateString()}</span>
                   </p>
