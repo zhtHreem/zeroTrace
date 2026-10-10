@@ -32,7 +32,7 @@
 /* nav */
 .zt-nav { position: sticky; top: 0; z-index: 50; background: rgba(243, 239, 229, 0.88); backdrop-filter: blur(10px); border-bottom: 1px solid var(--rule); }
 .zt-nav-in { display: flex; align-items: center; justify-content: space-between; height: 60px; }
-.zt-logo { font-family: var(--serif); font-weight: 600; font-size: 22px; letter-spacing: -0.02em; display: flex; align-items: baseline; gap: 2px; cursor: pointer; }
+.zt-logo { font-family: var(--serif); font-weight: 600; font-size: 22px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--ink); }
 .zt-logo b { background: var(--ink); color: var(--paper); padding: 0 6px; margin-left: 4px; border-radius: 2px; font-weight: 600; }
 .zt-links { display: flex; gap: 30px; }
 .zt-links a, .zt-links button { background: none; border: 0; color: var(--ink-2); font: 500 14px var(--sans); cursor: pointer; padding: 0; position: relative; }

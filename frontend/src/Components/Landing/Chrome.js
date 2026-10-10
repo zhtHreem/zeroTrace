@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './landing.css';
 import useAuth from './useAuth';
+import Logo from './Logo';
 
 const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -21,7 +22,7 @@ export function Nav() {
     <nav className="zt-nav">
       <div className="zt-wrap zt-nav-in">
         <div className="zt-logo" onClick={() => (pathname === '/' ? window.scrollTo({ top: 0, behavior: 'smooth' }) : navigate('/'))}>
-          zero<b>Trace</b>
+          <Logo />
         </div>
         <div className="zt-links">
           <button onClick={() => go('how')}>How it works</button>
@@ -59,7 +60,7 @@ export function Foot() {
   return (
     <footer className="zt-foot">
       <div className="zt-wrap zt-foot-in">
-        <div className="zt-logo">zero<b>Trace</b></div>
+        <div className="zt-logo"><Logo size={24} /></div>
         <span className="zt-mono">© {new Date().getFullYear()} · Surveys without a trace</span>
       </div>
     </footer>
