@@ -20,6 +20,7 @@ export default function NewForm() {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [newFormId, setNewFormId] = useState(null);
   const [category, setCategory] = useState("");
+  const [showComments, setShowComments] = useState(false);
   const { user, login } = useAuth();
 
   const calculateTotalSeconds = (time, unit) => time * (UNIT_SECONDS[unit] || 3600);
@@ -48,6 +49,7 @@ export default function NewForm() {
           user: userId,
           decryptionTime: calculateTotalSeconds(decryptionTime, decryptionUnit),
           decryptionUnit: "seconds", // Always store in seconds in backend
+          showComments,
         }),
       });
       if (!response.ok) {
@@ -188,6 +190,13 @@ export default function NewForm() {
                 </select>
               </div>
               <p className="zt-hint">Responses stay encrypted until this time has passed. Nobody, including you, can read them sooner.</p>
+            </div>
+            <div style={{ marginTop: 26 }}>
+              <label className="zt-check">
+                <input type="checkbox" checked={showComments} onChange={(e) => setShowComments(e.target.checked)} disabled={isPreviewMode} />
+                Show written answers in the public results
+              </label>
+              <p className="zt-hint">Results are public once the survey closes, as totals and percentages. Written answers stay private unless you tick this, because the way someone writes can identify them.</p>
             </div>
           </div>
 
