@@ -7,7 +7,7 @@ import useAuth from "../Landing/useAuth";
 
 const TYPES = ["Checkbox", "Multiple choice", "Drop down", "Short answer", "Paragraph"];
 const CHOICE_TYPES = ["Checkbox", "Multiple choice", "Drop down"];
-const DEPARTMENTS = ["Finance Department", "Operational Department", "Marketing Department", "HR Department", "IT Department"];
+const CATEGORIES = ["Workplace", "Education", "Technology", "Health & Wellbeing", "Community", "Consumers & Products", "Other"];
 const UNIT_SECONDS = { seconds: 1, minutes: 60, hours: 3600, days: 86400 };
 
 export default function NewForm() {
@@ -27,7 +27,7 @@ export default function NewForm() {
   const validateForm = () => {
     if (!formTitle.trim() || !formDescription.trim()) { toast.error("Title and description are required."); return false; }
     if (decryptionTime < 1) { toast.error("Unlock time must be at least 1 unit."); return false; }
-    if (!category.trim()) { toast.error("Choose a department."); return false; }
+    if (!category.trim()) { toast.error("Choose a category."); return false; }
     if (questions.length === 0) { toast.error("Add at least one question."); return false; }
     return true;
   };
@@ -162,10 +162,10 @@ export default function NewForm() {
 
           <div className="zt-panel" style={{ marginTop: 36 }}>
             <div className="zt-field-row">
-              <label className="zt-label">Department</label>
+              <label className="zt-label">Category</label>
               <select className="zt-select" value={category} onChange={(e) => setCategory(e.target.value)} disabled={isPreviewMode}>
-                <option value="" disabled>Choose who this survey is for</option>
-                {DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}
+                <option value="" disabled>Choose a category</option>
+                {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div className="zt-field-row">
