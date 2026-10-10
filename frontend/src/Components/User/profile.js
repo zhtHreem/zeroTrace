@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Shell from '../Landing/Chrome';
 import SurveyList, { timeLeft } from './forms';
+import IdentityPanel from './IdentityPanel';
 
 const API = process.env.REACT_APP_LOCAL_URL;
 
@@ -104,7 +105,8 @@ const UserProfile = () => {
             <>
               <h2 className="zt-h2" style={{ fontSize: 38, margin: '72px 0 0' }}>Privacy</h2>
               <p className="zt-page-sub">What ZeroTrace keeps, and what it never has.</p>
-              <div className="zt-grid-2" style={{ marginTop: 28, alignItems: 'stretch' }}>
+              <IdentityPanel uid={user._id} />
+              <div className="zt-grid-2" style={{ marginTop: 18, alignItems: 'stretch' }}>
                 <div className="zt-panel">
                   <span className="zt-tag solid">About you</span>
                   <dl className="zt-kv">
@@ -118,12 +120,12 @@ const UserProfile = () => {
                 <div className="zt-panel">
                   <span className="zt-tag red">About your respondents</span>
                   <dl className="zt-kv">
-                    <div><dt>Identity</dt><dd>Not stored</dd></div>
+                    <div><dt>Identity</dt><dd>Never sent</dd></div>
                     <div><dt>Linked to</dt><dd>A proof, not a person</dd></div>
+                    <div><dt>Timing</dt><dd>Rounded to the day</dd></div>
                     <div><dt>Answers</dt><dd>Encrypted until unlock</dd></div>
-                    <div><dt>You see</dt><dd>Totals only</dd></div>
                   </dl>
-                  <p className="zt-hint">Each response is stored with a cryptographic commitment instead of a user ID. The counts above are the only numbers we show you, and we never show anything about an individual.</p>
+                  <p className="zt-hint">Respondents prove they’re a registered member without saying which one, and the proof is made in their own browser. The server stores a one-time token for each survey that can’t be traced back to a person. The more members the group has, the stronger the cover. You only ever see totals.</p>
                 </div>
               </div>
             </>
