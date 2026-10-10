@@ -33,7 +33,7 @@ export default function NewForm() {
   };
 
   const handleSubmit = async () => {
-    const userId = JSON.parse(localStorage.getItem("user"));
+    const userId = JSON.parse(localStorage.getItem("uid") || "null"); // our database user id
     if (!userId) { toast.info("Please sign in (top right) to publish your survey."); return; }
     if (!validateForm()) return;
     try {
