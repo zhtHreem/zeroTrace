@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { useParams } from 'react-router-dom';
 import Shell from '../Landing/Chrome';
 import Recaptcha from '../Recapcha/recapcha';
+import { proveMembership, fetchGroup } from '../../lib/anonIdentity';
 
 const FormResponsePreview = () => {
   const [formData, setFormData] = useState(null);
@@ -15,6 +16,8 @@ const FormResponsePreview = () => {
   const [formStatus, setFormStatus] = useState('loading'); // loading, active, closed, draft, error
   const [timeRemaining, setTimeRemaining] = useState(null); // Countdown for decryption
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
+  const [proving, setProving] = useState(false);
+  const [groupSize, setGroupSize] = useState(null);
   const userId = JSON.parse(localStorage.getItem('uid'));
 
   const { id } = useParams();
@@ -27,6 +30,10 @@ const FormResponsePreview = () => {
     const form = document.getElementById('responseForm');
     if (form) form.reset();
   };
+
+  useEffect(() => {
+    fetchGroup().then((g) => setGroupSize(g.size)).catch(() => {});
+  }, []);
 
   // Fetch form data and status
   useEffect(() => {
@@ -120,11 +127,27 @@ const FormResponsePreview = () => {
         return;
       }
 
+      // The answers are signed with a zero-knowledge proof made in this browser.
+      // Only the proof and the answers are sent. No user id leaves this device.
+      const payload = JSON.stringify(allResponses);
+      setProving(true);
+      let proof;
+      try {
+        proof = await proveMembership(userId, formId, payload);
+      } catch (e) {
+        setProving(false);
+        if (e.code === 'NO_IDENTITY') toast.error('Your anonymous identity isn’t on this device. Sign out and back in, or restore it from your profile.');
+        else if (e.code === 'NOT_IN_GROUP') toast.error('Your identity isn’t registered yet. Please sign in again.');
+        else toast.error('Could not create your private proof. Please try again.');
+        return;
+      }
+
       const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/responses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formId, responses: allResponses, user: userId }),
+        body: JSON.stringify({ formId, payload, proof }),
       });
+      setProving(false);
       const data = await response.json();
 
       if (!response.ok) {
@@ -132,6 +155,8 @@ const FormResponsePreview = () => {
           case 'DUPLICATE_SUBMISSION': toast.warning('You’ve already submitted this survey.'); break;
           case 'FORM_NOT_FOUND': toast.error('This survey no longer exists.'); break;
           case 'MISSING_FIELDS': toast.error('Please fill in all required fields.'); break;
+          case 'UNKNOWN_GROUP': toast.error('The anonymous group changed. Please try submitting again.'); break;
+          case 'INVALID_PROOF': toast.error('Your private proof was rejected. Please try again.'); break;
           default: toast.error('An error occurred while submitting.');
         }
         throw new Error(data.message);
@@ -142,6 +167,7 @@ const FormResponsePreview = () => {
       setUnlockAt(new Date(data.data.unlockAt));
       clearForm();
     } catch (error) {
+      setProving(false);
       console.error('Error submitting response:', error);
     }
   };
@@ -208,7 +234,7 @@ const FormResponsePreview = () => {
           <h1 className="zt-page-title">{formData.title}</h1>
           <p className="zt-page-sub">{formData.description}</p>
           <div className="zt-note">
-            <b>Your answers are anonymous.</b> We verify you’re a real, unique person, but your identity is never attached to what you write.
+            <b>Your answers are anonymous.</b> Your browser proves you’re a registered member without saying which one, so the server can’t tell who wrote what. {groupSize !== null && <span>The anonymous group currently has <b>{groupSize}</b> member{groupSize === 1 ? '' : 's'}{groupSize < 20 ? ', so protection grows as more people join' : ''}.</span>}
           </div>
 
           {formStatus === 'draft' && <p className="zt-hint red">This survey is a draft and can’t accept responses yet.</p>}
@@ -244,7 +270,7 @@ const FormResponsePreview = () => {
 
               <div className="zt-actions" style={{ marginTop: 26, justifyContent: 'space-between' }}>
                 <span className="zt-mono">{hh ? `Results unlock in ${hh}` : 'Results are time-locked'}</span>
-                <button className="zt-btn primary" onClick={handleSubmit}>Submit anonymously →</button>
+                <button className="zt-btn primary" onClick={handleSubmit} disabled={proving}>{proving ? 'Creating your private proof…' : 'Submit anonymously →'}</button>
               </div>
             </>
           )}
