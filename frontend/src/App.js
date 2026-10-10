@@ -1,43 +1,30 @@
-
 import React, { useEffect } from 'react';
-import { lazy, Suspense }  from 'react';
-import AboutPage from './Components/HomePage/about';
-import Header from './Components/HomePage/header';
-import Box from '@mui/material/Box';
 import { useLocation } from 'react-router-dom';
-const Navbar = lazy(() => import('./Components/HomePage/navbar').then(module => ({ default: module.Navbar })));
-const Footer = lazy(() => import('./Components/HomePage/navbar').then(module => ({ default: module.Footer })));
+import Shell from './Components/Landing/Chrome';
+import Hero from './Components/Landing/Hero';
+import Crowd from './Components/Landing/Crowd';
+import { Marquee, Features, LiveSurveys, FinalCTA } from './Components/Landing/Sections';
+
 function App() {
   const location = useLocation();
 
-  
+  // support navigating here from other pages and landing on a section
   useEffect(() => {
-    // Check if we should scroll to about section
-    if (location.state?.scrollToAbout || location.hash === '#about') {
-      const aboutSection = document.getElementById('about-section');
-      if (aboutSection) {
-        setTimeout(() => {
-          aboutSection.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
-          });
-        }, 100); // Small delay to ensure component is mounted
-      }
-    }
+    const id = location.state?.scrollTo || location.hash.replace('#', '');
+    if (!id) return;
+    const t = setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+    return () => clearTimeout(t);
   }, [location]);
-  return (
 
-    <div className="App">
-         <Suspense fallback={<Box sx={{ height: '64px' }} />}>
-        <Navbar />
-      </Suspense>
-       <Header/>
-       <AboutPage/>
-        <Suspense fallback={<Box sx={{ height: '64px' }} />}>
-        <Footer />
-      </Suspense>
-    </div>
-   
+  return (
+    <Shell>
+      <Hero />
+      <Marquee />
+      <Crowd />
+      <Features />
+      <LiveSurveys />
+      <FinalCTA />
+    </Shell>
   );
 }
 
