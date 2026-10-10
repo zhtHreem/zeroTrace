@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { toast } from 'react-toastify';
+import { ensureIdentity } from '../../lib/anonIdentity';
 
 export default function useAuth() {
   const navigate = useNavigate();
@@ -24,9 +25,19 @@ export default function useAuth() {
           throw new Error(details.error || 'Failed to login');
         }
         const data = await res.json();
-        localStorage.setItem('uid', JSON.stringify(data.user._id));
+        const userId = data.user._id;
+        localStorage.setItem('uid', JSON.stringify(userId));
         localStorage.setItem('user', JSON.stringify(userData));
-        window.location.assign('/');
+
+        // Join the anonymous group (or confirm we already have). Never blocks sign-in.
+        const idResult = await ensureIdentity(userId, tokenResponse.access_token);
+        if (idResult.status === 'restore-needed') {
+          localStorage.setItem('zt_restore_needed', '1');
+        } else if (idResult.status === 'error') {
+          toast.error(idResult.message);
+        }
+
+        window.location.assign(idResult.status === 'restore-needed' ? `/user/${userId}` : '/');
       } catch (err) {
         toast.error(err.message || 'Login failed');
       }
