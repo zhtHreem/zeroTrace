@@ -62,6 +62,7 @@ export function Foot() {
       <div className="zt-wrap zt-foot-in">
         <div className="zt-logo"><Logo size={24} /></div>
         <span className="zt-mono">© {new Date().getFullYear()} · Surveys without a trace</span>
+        <span className="zt-mono zt-foot-note">We count visits anonymously, with no cookies. Survey pages are never counted.</span>
       </div>
     </footer>
   );

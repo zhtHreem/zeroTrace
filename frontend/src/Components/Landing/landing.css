@@ -263,3 +263,5 @@
 .zt-fakecaptcha { display: inline-flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid var(--rule); background: #fff; font-size: 14px; color: var(--ink-2); }
 .zt-fakecaptcha span { width: 22px; height: 22px; border: 2px solid var(--ink-3); border-radius: 2px; background: #fff; display: block; }
 .zt-fakecaptcha em { font: normal 11px var(--mono); color: var(--ink-3); margin-left: 10px; }
+
+.zt-foot-note { width: 100%; text-transform: none; letter-spacing: 0.02em; font-size: 12px; }
