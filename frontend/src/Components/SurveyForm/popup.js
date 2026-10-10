@@ -1,10 +1,4 @@
 import React, { useState } from 'react';
-import {   Dialog,   DialogTitle,  DialogContent,  DialogContentText,  Button, TextField, IconButton,  Box} from '@mui/material';
-import { 
-  CheckCircleOutline as CheckIcon, 
-  ContentCopy as CopyIcon, 
-  Link as LinkIcon 
-} from '@mui/icons-material';
 
 const FormSuccessPopup = ({ formId, onClose }) => {
   const [copied, setCopied] = useState(false);
@@ -18,41 +12,21 @@ const FormSuccessPopup = ({ formId, onClose }) => {
   };
 
   return (
-    <Dialog open={true} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>
-        <Box display="flex" alignItems="center" justifyContent="center" mb={1}>
-          <CheckIcon color="success" sx={{ fontSize: 48 }} />
-        </Box>
-        Form Created Successfully
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText align="center" mb={2}>
-          Your form is now ready to be shared
-        </DialogContentText>
-        
-        <Box display="flex" alignItems="center" mb={2}>
-          <TextField fullWidth    variant="outlined" value={formLink}
-            InputProps={{
-              readOnly: true,
-              endAdornment: (
-                <IconButton onClick={handleCopyLink}>
-                  {copied ? <CheckIcon color="success" /> : <CopyIcon />}
-                </IconButton>
-              )
-            }}
-          />
-        </Box>
-        
-        <Box display="flex" justifyContent="center" gap={2}>
-          <Button   variant="contained"  sx={{backgroundColor:"#6A9C89"}} startIcon={<LinkIcon />} href={formLink}  target="_blank"   >
-            Open Form
-          </Button>
-          <Button  variant="outlined"   onClick={onClose} >
-            Close
-          </Button>
-        </Box>
-      </DialogContent>
-    </Dialog>
+    <div className="zt-modal-back" onClick={onClose}>
+      <div className="zt-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <span className="zt-tag solid">Published</span>
+        <h2 className="zt-page-title" style={{ fontSize: 40, marginTop: 18 }}>Your survey is live.</h2>
+        <p className="zt-page-sub">Share this link. Respondents verify they’re human, then answer anonymously.</p>
+        <div className="zt-copy">
+          <input className="zt-input" readOnly value={fullFormLink} onFocus={(e) => e.target.select()} />
+          <button className="zt-btn sm" onClick={handleCopyLink}>{copied ? 'Copied ✓' : 'Copy'}</button>
+        </div>
+        <div className="zt-actions" style={{ marginTop: 26 }}>
+          <a className="zt-btn primary" href={formLink} target="_blank" rel="noreferrer">Open survey →</a>
+          <button className="zt-btn" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
   );
 };
 
