@@ -5,7 +5,7 @@ const router = express.Router();
 
 // POST route to save a form
 router.post('/forms', async (req, res) => {
-    const { category, title, description, questions, user, decryptionTime, decryptionUnit } = req.body;
+    const { category, title, description, questions, user, decryptionTime, decryptionUnit, showComments } = req.body;
     console.log('Form data received:', req.body);
 
     try {
@@ -18,6 +18,7 @@ router.post('/forms', async (req, res) => {
             user,
             decryptionTime,
             decryptionUnit,
+            showComments: !!showComments,
         });
 
         // Save the form to the database

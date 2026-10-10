@@ -45,6 +45,8 @@ const formSchema = new mongoose.Schema({
         type: Date, 
         default: null, // Records when encryption should end
     },
+    // Creator opt-in: publish written answers in public results (off by default; writing style can identify people)
+    showComments: { type: Boolean, default: false },
     // Internal bookkeeping for bulk-imported content; never returned by the API.
     seedBatch: { type: String, select: false, default: undefined },
 }, { timestamps: true });
