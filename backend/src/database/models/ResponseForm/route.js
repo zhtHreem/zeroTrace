@@ -3,53 +3,69 @@ import mongoose from 'mongoose';
 import { Response, SubmissionTracking } from './schema.js';
 import { encryptResponse, decryptResponse } from '../Encryption/encryption.js';
 import crypto from 'crypto';
-import ZKPSubmissionManager from './zkp.js';
+import { verifyProof } from '@semaphore-protocol/proof';
+import { GroupRoot } from '../Identity/schema.js';
 import Form from '../Form/schema.js';
 import moment from 'moment'; // For dynamic time calculation
 
 const router = express.Router();
-const zkpManager = new ZKPSubmissionManager();
 
-// Submit a response
+// Submit a response.
+// The body carries NO user identity. It carries the answers (as the exact string the browser
+// signed) and a zero-knowledge proof that says: "I belong to the group of registered members,
+// this is my one answer to this survey". The server checks the proof, stores the answers
+// encrypted, and remembers only the per-survey nullifier so the same member cannot answer twice.
+// The nullifier cannot be linked back to a member without that member's secret.
 router.post('/responses', async (req, res) => {
   try {
-    const { formId, responses, user } = req.body;
+    const { formId, payload, proof } = req.body || {};
 
-    // Validate input
-    if (!formId || !responses || !user) {
-      return res.status(400).json({ message: 'formId, responses, and user are required' });
+    if (!formId || typeof payload !== 'string' || !proof) {
+      return res.status(400).json({ status: 'error', code: 'MISSING_FIELDS', message: 'formId, payload and proof are required' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(formId)) {
+      return res.status(404).json({ status: 'error', code: 'FORM_NOT_FOUND', message: 'Form not found' });
     }
 
-    // Fetch the form to validate its state
     const form = await Form.findById(formId);
     if (!form) {
-      return res.status(404).json({
-        status: 'error',
-        code: 'FORM_NOT_FOUND',
-        message: 'Form not found',
-      });
+      return res.status(404).json({ status: 'error', code: 'FORM_NOT_FOUND', message: 'Form not found' });
+    }
+    if (form.status !== 'active' || new Date() > new Date(form.encryptionEndTime)) {
+      return res.status(403).json({ status: 'error', code: 'FORM_CLOSED', message: 'Form is not accepting submissions.' });
     }
 
-    const now = new Date();
-    // Ensure the form is active and within the active period
-    if (form.status !== 'active' || now > new Date(form.encryptionEndTime)) {
-      return res.status(403).json({ error: 'Form is not accepting submissions.' });
+    // The proof must be about THIS survey and THESE answers (stops replay and swapping answers)
+    const expectedScope = BigInt('0x' + formId).toString();
+    const expectedMessage = BigInt('0x' + crypto.createHash('sha256').update(payload).digest('hex')).toString();
+    if (String(proof.scope) !== expectedScope || String(proof.message) !== expectedMessage) {
+      return res.status(400).json({ status: 'error', code: 'INVALID_PROOF', message: 'The proof does not match this submission.' });
     }
 
-    // Generate ZKP commitment
-    const { commitment, nullifier } = await zkpManager.generateZKPCommitment(user, formId);
-
-    // Verify submission uniqueness
-    const isUniqueSubmission = await zkpManager.verifySubmissionUniqueness(commitment, nullifier, formId);
-    if (!isUniqueSubmission) {
-      return res.status(409).json({
-        status: 'error',
-        code: 'DUPLICATE_SUBMISSION',
-        message: 'You have already submitted a response for this form',
-      });
+    // ...made against a group that really existed
+    if (!(await GroupRoot.exists({ root: String(proof.merkleTreeRoot) }))) {
+      return res.status(400).json({ status: 'error', code: 'UNKNOWN_GROUP', message: 'Your identity group is out of date. Please refresh and try again.' });
     }
 
-    // Format answers with question details
+    // ...and mathematically valid
+    let valid = false;
+    try { valid = await verifyProof(proof); } catch (e) { valid = false; }
+    if (!valid) {
+      return res.status(400).json({ status: 'error', code: 'INVALID_PROOF', message: 'The proof could not be verified.' });
+    }
+
+    // One answer per member per survey
+    const nullifier = String(proof.nullifier);
+    if (await SubmissionTracking.exists({ formId, nullifier })) {
+      return res.status(409).json({ status: 'error', code: 'DUPLICATE_SUBMISSION', message: 'You have already submitted a response for this form' });
+    }
+
+    let responses;
+    try { responses = JSON.parse(payload); } catch (e) { responses = null; }
+    if (!responses || typeof responses !== 'object') {
+      return res.status(400).json({ status: 'error', code: 'MISSING_FIELDS', message: 'Invalid answers payload' });
+    }
+
     const formattedAnswers = form.questions.map((question) => ({
       question: question._id.toString(),
       questionTitle: question.title,
@@ -57,50 +73,35 @@ router.post('/responses', async (req, res) => {
       questionType: question.type,
     }));
 
-    // Encrypt the formatted answers
     const { encryptedData, iv } = encryptResponse(JSON.stringify(formattedAnswers));
-
-    // Calculate unlock time dynamically based on form settings
     const unlockAt = new Date(form.encryptionEndTime);
 
-    // Create new response with ZKP commitment
-    const newResponse = new Response({
+    // Timestamps are rounded to the day so submission time cannot be matched to a sign-in time
+    const day = new Date(); day.setUTCHours(0, 0, 0, 0);
+
+    const savedResponse = await new Response({
       form: formId,
-      commitment, // Use ZKP commitment instead of user ID
-      nullifier, // Store nullifier for additional security
-      answers: { encryptedData, iv }, // Store encrypted answers
-      unlockAt,
-    });
-
-    const savedResponse = await newResponse.save();
-
-    // Create submission tracking
-    const submissionTracking = new SubmissionTracking({
-      formId,
-      submissionHash: commitment,
+      commitment: nullifier, // the per-survey anonymous token (kept for schema compatibility)
       nullifier,
-    });
-    await submissionTracking.save();
+      answers: { encryptedData, iv },
+      unlockAt,
+      submittedAt: day,
+    }).save();
+
+    await new SubmissionTracking({ formId, submissionHash: nullifier, nullifier, submittedAt: day }).save();
 
     res.status(201).json({
       status: 'success',
       code: 'SUBMISSION_SUCCESSFUL',
       message: 'Response submitted successfully',
-      data: {
-        responseId: savedResponse._id,
-        submittedAt: savedResponse.createdAt,
-        unlockAt: savedResponse.unlockAt,
-        commitment,
-      },
+      data: { responseId: savedResponse._id, unlockAt: savedResponse.unlockAt },
     });
   } catch (error) {
+    if (error && error.code === 11000) {
+      return res.status(409).json({ status: 'error', code: 'DUPLICATE_SUBMISSION', message: 'You have already submitted a response for this form' });
+    }
     console.error('Error submitting response:', error);
-    res.status(500).json({
-      status: 'error',
-      code: 'SUBMISSION_FAILED',
-      message: 'Error submitting form response',
-      error: error.message,
-    });
+    res.status(500).json({ status: 'error', code: 'SUBMISSION_FAILED', message: 'Error submitting form response' });
   }
 });
 
