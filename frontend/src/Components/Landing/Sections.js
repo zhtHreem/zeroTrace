@@ -26,7 +26,7 @@ export function Marquee() {
 const FEATURES = [
   { t: 'Verifiable uniqueness', d: 'A zero-knowledge proof backs every response, so you can trust it’s one person, one answer, with no identity attached.' },
   { t: 'Proof of humanity', d: 'Respondents are verified as real people before they submit, which keeps scripts and bot farms out of your data.' },
-  { t: 'Complete anonymity', d: 'Nothing in a response points back to the person who wrote it. There is nothing to leak because it was never collected.' },
+  { t: 'Complete anonymity', d: 'Your browser proves you’re a registered member without saying which one. The server never receives who you are, so there is nothing to leak.' },
   { t: 'Time-locked results', d: 'Responses stay encrypted until the moment you choose, then open automatically. Not a minute sooner.' },
 ];
 
