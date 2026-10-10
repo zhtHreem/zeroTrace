@@ -19,7 +19,7 @@ import { encryptResponse } from '../src/database/models/Encryption/encryption.js
 import { SURVEYS } from './seedContent.js';
 
 const BATCH = 'launch-v1';
-const OWNER = { email: 'team@zerotrace.example', name: 'ZeroTrace Team' };
+const OWNER = { email: 'pulse@example.invalid', name: 'Public Pulse' }; // neutral publisher name, deliberately not "ZeroTrace Team"
 const DAY = 24 * 60 * 60 * 1000;
 const args = new Set(process.argv.slice(2));
 
