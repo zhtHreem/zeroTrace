@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { useParams } from 'react-router-dom';
 import Shell from '../Landing/Chrome';
 import Recaptcha from '../Recapcha/recapcha';
+import QuestionField from './QuestionField';
 import { proveMembership, fetchGroup } from '../../lib/anonIdentity';
 
 const FormResponsePreview = () => {
@@ -172,51 +173,6 @@ const FormResponsePreview = () => {
     }
   };
 
-  const renderQuestion = (question) => {
-    switch (question.type) {
-      case 'Short answer':
-        return (
-          <input className="zt-input" placeholder="Type your answer" required={question.required}
-            onChange={(e) => handleResponseChange(question._id, e.target.value)} />
-        );
-      case 'Paragraph':
-        return (
-          <textarea className="zt-textarea" rows={4} placeholder="Type your answer" required={question.required}
-            onChange={(e) => handleResponseChange(question._id, e.target.value)} />
-        );
-      case 'Multiple choice':
-        return question.options.map((option, idx) => (
-          <label key={idx} className={`zt-opt${allResponses[question._id] === option ? ' on' : ''}`}>
-            <input type="radio" name={question._id} value={option} checked={allResponses[question._id] === option}
-              onChange={(e) => handleResponseChange(question._id, e.target.value)} />
-            {option}
-          </label>
-        ));
-      case 'Checkbox':
-        return question.options.map((option, idx) => {
-          const selected = allResponses[question._id] || [];
-          const checked = selected.includes(option);
-          return (
-            <label key={idx} className={`zt-opt${checked ? ' on' : ''}`}>
-              <input type="checkbox" checked={checked}
-                onChange={(e) => handleResponseChange(question._id, e.target.checked ? [...selected, option] : selected.filter((i) => i !== option))} />
-              {option}
-            </label>
-          );
-        });
-      case 'Drop down':
-        return (
-          <select className="zt-select" value={allResponses[question._id] || ''} required={question.required}
-            onChange={(e) => handleResponseChange(question._id, e.target.value)}>
-            <option value="" disabled>Select an option</option>
-            {question.options.map((option, idx) => <option key={idx} value={option}>{option}</option>)}
-          </select>
-        );
-      default:
-        return <p className="zt-hint">Unsupported question type.</p>;
-    }
-  };
-
   if (formStatus === 'loading') return <Shell><div className="zt-center">Loading survey…</div></Shell>;
   if (formStatus === 'error' || !formData) return <Shell><div className="zt-center">We couldn’t load this survey.</div></Shell>;
 
@@ -257,7 +213,7 @@ const FormResponsePreview = () => {
                       {question.required && <span className="zt-tag red">Required</span>}
                     </div>
                     <h3 className="zt-ask-t">{question.title}</h3>
-                    {renderQuestion(question)}
+                    <QuestionField question={question} value={allResponses[question._id]} onChange={(v) => handleResponseChange(question._id, v)} />
                     {errors[question._id] && <p className="zt-hint red">This question is required.</p>}
                   </div>
                 ))}
