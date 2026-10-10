@@ -45,6 +45,8 @@ const formSchema = new mongoose.Schema({
         type: Date, 
         default: null, // Records when encryption should end
     },
+    // Internal bookkeeping for bulk-imported content; never returned by the API.
+    seedBatch: { type: String, select: false, default: undefined },
 }, { timestamps: true });
 
 const Form = mongoose.model('Form', formSchema);
