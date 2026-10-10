@@ -1,21 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Typography, CircularProgress, Paper } from '@mui/material';
-import { Navbar, Footer } from '../HomePage/navbar';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from 'chart.js';
-import { Bar, Pie } from 'react-chartjs-2';
+import Shell from '../Landing/Chrome';
 
-// Register required Chart.js components
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
+// count how many times each answer was chosen
+const aggregate = (answers) => {
+  const counts = {};
+  answers.forEach((a) => {
+    if (a?.answer) (Array.isArray(a.answer) ? a.answer : [a.answer]).forEach((v) => { counts[v] = (counts[v] || 0) + 1; });
+  });
+  return Object.entries(counts).sort((x, y) => y[1] - x[1]);
+};
 
 const ResultsPage = () => {
   const { formId } = useParams();
@@ -27,8 +21,7 @@ const ResultsPage = () => {
     const fetchResponses = async () => {
       try {
         const response = await fetch(`${process.env.REACT_APP_LOCAL_URL}/api/forms/${formId}/responses`);
-        const data = await response.json();
-        setResponses(data);
+        setResponses(await response.json());
         setError(null);
       } catch (err) {
         console.error('Failed to fetch responses:', err);
@@ -37,133 +30,72 @@ const ResultsPage = () => {
         setLoading(false);
       }
     };
-
     fetchResponses();
   }, [formId]);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  if (loading) return <Shell><div className="zt-center">Loading results…</div></Shell>;
+  if (error) return <Shell><div className="zt-center">{error}</div></Shell>;
 
-  if (error) {
-    return <Typography>{error}</Typography>;
-  }
+  const hasResponses = Array.isArray(responses) && responses.length > 0;
+  const unlocked = hasResponses && responses[0]?.decrypted;
 
-  // Helper function to aggregate response data for charts
-  const aggregateResponses = (answers) => {
-    if (!answers || answers.length === 0) return { labels: [], data: [] };
-
-    const aggregation = {};
-    answers.forEach((answer) => {
-      if (answer?.answer) {
-        const response = Array.isArray(answer.answer) ? answer.answer : [answer.answer];
-        response.forEach((res) => {
-          aggregation[res] = (aggregation[res] || 0) + 1;
-        });
-      }
-    });
-
-    return {
-      labels: Object.keys(aggregation),
-      data: Object.values(aggregation),
-    };
-  };
-
-  // Render charts or textual responses based on question type
   const renderResponses = (question, answers) => {
-    const { labels, data } = aggregateResponses(answers);
+    const type = question.questionType?.toLowerCase().trim();
+    const clean = answers.filter(Boolean);
 
-    if (labels.length === 0) {
-      return <Typography>No responses available for this question.</Typography>;
+    if (['multiple choice', 'checkbox', 'dropdown', 'drop down'].includes(type)) {
+      const rows = aggregate(clean);
+      if (!rows.length) return <p className="zt-hint">No responses for this question.</p>;
+      const total = clean.length;
+      return rows.map(([label, n]) => {
+        const pct = Math.round((n / total) * 100);
+        return (
+          <div key={label} className="zt-bar-row">
+            <div className="zt-bar-track">
+              <div className="zt-bar-fill" style={{ width: `${pct}%` }} />
+              <span className="zt-bar-label">{label}</span>
+            </div>
+            <span className="zt-mono" style={{ textAlign: 'right' }}>{pct}% · {n}</span>
+          </div>
+        );
+      });
     }
-
-    const questionType = question.questionType?.toLowerCase().trim();
-
-    if (questionType === 'multiple choice' || questionType === 'checkbox') {
-      return (
-        <Bar
-          data={{
-            labels,
-            datasets: [
-              {
-                label: question.questionTitle,
-                data,
-                backgroundColor: ['#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0'],
-                borderColor: ['#388e3c', '#1976d2', '#f57c00', '#d32f2f', '#7b1fa2'],
-                borderWidth: 1,
-              },
-            ],
-          }}
-          options={{ plugins: { legend: { display: false } } }}
-        />
-      );
-    } else if (questionType === 'dropdown' || questionType === 'drop down') {
-      return (
-        <Pie
-          data={{
-            labels,
-            datasets: [
-              {
-                label: question.questionTitle,
-                data,
-                backgroundColor: ['#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0'],
-                hoverOffset: 4,
-              },
-            ],
-          }}
-        />
-      );
-    } else if (questionType === 'short answer' || questionType === 'paragraph') {
-      return (
-        <Box>
-          {answers.map((answer, idx) => (
-            <Typography key={idx} variant="body2" sx={{ mb: 1 }}>
-              {idx + 1}. {answer?.answer || 'No response'}
-            </Typography>
-          ))}
-        </Box>
-      );
-    } else {
-      return (
-        <Typography>
-          Unsupported question type: {questionType || 'Unknown'}.
-        </Typography>
-      );
+    if (type === 'short answer' || type === 'paragraph') {
+      return clean.length ? clean.map((a, i) => (
+        <div key={i} className="zt-answer"><p>{a.answer || 'No response'}</p></div>
+      )) : <p className="zt-hint">No responses for this question.</p>;
     }
+    return <p className="zt-hint">Unsupported question type: {type || 'unknown'}.</p>;
   };
 
   return (
-    <>
-      <Navbar />
-      <Box sx={{ p: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          Results for Form
-        </Typography>
-        {responses && responses.length ? (
-          responses[0]?.decrypted ? (
-            responses[0]?.answers?.map((question, index) => (
-              <Paper key={index} elevation={3} sx={{ p: 4, mb: 4 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  {question.questionTitle || 'Untitled Question'}
-                </Typography>
-                <Box sx={{ height: '300px' }}>
-                  {renderResponses(question, responses.map((r) => r.answers?.[index] || null))}
-                </Box>
-              </Paper>
-            ))
+    <Shell>
+      <div className="zt-page">
+        <div className="zt-narrow">
+          <div className="zt-mono">Results</div>
+          <h1 className="zt-page-title">What people said</h1>
+          {hasResponses && <p className="zt-page-sub">{responses.length} anonymous response{responses.length === 1 ? '' : 's'}. No names, no identifiers.</p>}
+
+          {!hasResponses ? (
+            <div className="zt-empty">No responses yet.</div>
+          ) : !unlocked ? (
+            <div className="zt-panel" style={{ marginTop: 36 }}>
+              <span className="zt-tag red">Sealed</span>
+              <h2 className="zt-page-title" style={{ fontSize: 36, marginTop: 14 }}>Still time-locked.</h2>
+              <p className="zt-page-sub">Responses are encrypted and open automatically once the unlock time has passed. Not even you can read them early.</p>
+            </div>
           ) : (
-            <Typography>Responses are still locked and cannot be decrypted at this time.</Typography>
-          )
-        ) : (
-          <Typography>No responses found.</Typography>
-        )}
-      </Box>
-      <Footer />
-    </>
+            responses[0]?.answers?.map((question, index) => (
+              <div key={index} className="zt-panel" style={{ marginTop: 18 }}>
+                <div className="zt-mono">Q{String(index + 1).padStart(2, '0')}</div>
+                <h3 className="zt-ask-t">{question.questionTitle || 'Untitled question'}</h3>
+                {renderResponses(question, responses.map((r) => r.answers?.[index] || null))}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </Shell>
   );
 };
 
