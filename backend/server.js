@@ -10,6 +10,7 @@ import cron from 'node-cron';
 import FormRoute from './src/database/models/Form/route.js';
 import ResponseForm from './src/database/models/ResponseForm/route.js';
 import Users from './src/database/models/User/route.js';
+import Identity from './src/database/models/Identity/route.js';
 import { decryptResponse } from './src/database/models/Encryption/encryption.js'; // Import decryption logic
 import Response from './src/database/models/ResponseForm/schema.js'; // Import Response model
 
@@ -91,6 +92,7 @@ app.get('/', (req, res) => res.send('API is running successfully'));
 
 // Additional Routes
 app.use('/api', Users);
+app.use('/api', Identity);
 app.use('/api', FormRoute);
 app.use('/api', ResponseForm);
 
