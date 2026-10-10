@@ -24,3 +24,7 @@ backend/node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# build output and example env files
+frontend/build
+!.env.example
