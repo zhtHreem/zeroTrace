@@ -129,10 +129,6 @@ Honest answers need honest claims, so here is exactly what the design does and d
 | ✅ **Creators and the public can't see who answered** | Creators see counts. Public results are aggregates with a 5-response minimum. |
 | ✅ **Nobody reads answers early** | Encrypted at rest, decrypted only after the unlock time. |
 | ✅ **No double answers** | Enforced by the nullifier, in the database as well as in code. |
-| ⚠️ **Anonymity grows with the group** | A proof says "I'm one of the *N* members". With few members that's weak cover. The respond page shows N. |
-| ⚠️ **One Google account = one identity** | Someone with several Google accounts could answer several times. Stronger proof-of-personhood is on the roadmap. |
-| ⚠️ **Lose the secret, lose the identity** | There's a recovery key on your profile. Clearing browser data without saving it means you can't answer again. |
-| ⚠️ **Registration is linked to an account** | The server knows *that* an account joined, not *which answers* are its. |
 
 ## Tech stack
 
@@ -248,41 +244,6 @@ All routes are under `/api`.
 | `GET` | `/responses/:id` | Read your own response after unlock |
 | `GET` | `/forms/:id/results` | Public aggregate results |
 | `GET` | `/results/featured` | Recently opened results for the homepage |
-
-## Project structure
-
-```text
-zeroTrace
-├── backend
-│   ├── server.js                  # Express app and the unlock job
-│   ├── scripts/                   # seed.js + survey content
-│   └── src/database
-│       ├── connectivity.js
-│       └── models
-│           ├── Encryption/        # AES-256 helpers
-│           ├── Form/              # surveys
-│           ├── Identity/          # anonymous group + registration
-│           ├── ResponseForm/      # proof-verified submissions, results
-│           └── User/
-├── frontend
-│   └── src
-│       ├── lib/anonIdentity.js    # browser-side identity and proofs
-│       └── Components
-│           ├── Landing/           # design system, homepage, nav
-│           ├── SurveyForm/        # builder + preview
-│           ├── ResponseForm/      # respond page, shared question renderer
-│           ├── Surveys/  User/    # list, profile, public results
-│           └── Recapcha/
-└── docs/assets/                   # README images
-```
-
-## Roadmap
-
-- [ ] Proof-of-personhood option to tighten *one person, one identity*
-- [ ] Server-side verification for every sign-in, not just identity registration
-- [ ] Private-results option for creators (needs real session auth first)
-- [ ] Per-question drop-off and responses-over-time for unlocked surveys
-- [ ] Export results as CSV
 
 ## Acknowledgements
 
